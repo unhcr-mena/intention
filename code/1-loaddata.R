@@ -73,29 +73,92 @@ sample <- rbind(sampleall,sampleall2)
 rm(sampleall,sampleall2,files,files2, i)
 
 ## Rename column for mergin
-names(sample)[names(sample)=="CaseNo"] <- "refugeenumber"
 
 
-sample <- sample[ ,c("refugeenumber", "COO_L1", "size", "needs",  "Prob", "Stratum", "ctr",  "CashList")]
+sample <- sample[ ,c("CaseNo", "COO_L1", "size", "needs",  "Prob", "Stratum", "ctr",  "CashList")]
 
 #levels(as.factor(sample$COO_L1))
 #levels(as.factor(sample$size))
 #levels(as.factor(sample$needs))
 str(sample$needs)
 sample$needs <- as.factor(sample$needs)
+
+##loading  case profile from progres
+progrescase <- read_csv("data/progrescase-1.csv")
+
+samplefull <- merge(x=sample, y=progrescase, by="CaseNo", all.x=TRUE)
+
+field <- as.data.frame(names(samplefull))
+write.csv(field, "data/field.csv")
+
+samplefull <- samplefull[ , c("CaseNo",
+                              "COO_L1",
+                              "size",
+                              "needs",
+                              "Prob",
+                              "Stratum",
+                              "ctr",
+                              "CashList",
+                              "CountryOrigin",
+                              "cool1",
+                              "cool2",
+                              "CountryAsylum",
+                              "coal1",
+                              "coal2",
+                              "Num_Inds",
+                              "AVG_Age",
+                              "STDEV_Age",
+                              "Montharrival",
+                              "YearArrival",
+                              "dem_relation",
+                              "dem_age",
+                              "dem_agegroup",
+                              "dem_sex",
+                              "RefStatCategory",
+                              "dem_ethnCat",
+                              "dem_religionCat",
+                              "Case.size",
+                              "dependency",
+                              "female.ratio",
+                              "agecohort",
+                              "AVGAgecohort",
+                              "STDEVAgeclass",
+                              "edu_highestcat",
+                              "occupationcat",
+                              "dem_marriagecat",
+                              "bir_syria",
+                              "At.Risk",
+                              "Child.Labour",
+                              "Child.marriage..parent.or.pregnancy",
+                              "Family.Needs",
+                              "Marginalised",
+                              "Medical",
+                              "Need.of.Care",
+                              "Problem.with.violence.law.recruitment",
+                              "Separated.Child",
+                              "Single.Parent",
+                              "Unaccompanied",
+                              "Victim.of.Violence",
+                              "Woman.at.Risk")]
+
+names(samplefull)[names(samplefull)=="CaseNo"] <- "refugeenumber"
 ############################################################
-#                                                          #
-#   Position your form & your data in the data folder  
-#                                                          #
-############################################################
+
 
 rm(data)
 library(readr)
-data.or <- read_delim("data/data.csv",   ";", escape_double = FALSE, trim_ws = TRUE)
+data.iraq <- read_delim("data/iraq.csv",   ";", escape_double = FALSE, trim_ws = TRUE)
+data.jordan <- read_delim("data/jordan.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+data.egypt <- read_delim("data/egypt.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+
+data.iraq$context.moi <- ""
+data.egypt$context.moi <- ""
+
+dataall <- rbind(data.iraq,data.jordan,data.egypt)
 #data.or <- read.csv("data/data.csv", sep=";", encoding="UTF-8", na.strings="n/a")
 
 ### merge with sample
-data.or <- merge(x= sample,y=data.or,  by="refugeenumber", all.y=TRUE)
+data.or <- merge(x= samplefull,y=dataall,  by="refugeenumber", all.y=TRUE)
 
 ##############################################
 ## Load form
