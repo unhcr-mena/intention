@@ -116,6 +116,9 @@ packages <- c(
   ### Packages for Survey data management  
   "sampling", ## Survey Sampling
   "survey",  ##Analysis of Complex Survey Samples
+  "srvyr",
+  "samplesize4surveys",
+  "svglite",
   
   ##################################################################
   ### Other Packages
@@ -200,3 +203,5 @@ library(readxl)
 library(plyr)
 #library(xlsx)
 library(FactoMineR)
+
+library(srvyr)

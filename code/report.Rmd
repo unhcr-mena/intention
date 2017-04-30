@@ -1,0 +1,215 @@
+---
+title: "Intention Survey - Syrian Refugees in Iraq, Jordan & Egypt"
+author: "UNHCR"
+date: "`r Sys.Date()`"
+output: 
+  word_document: 
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+setwd("D:/R-project/intention")
+source("code/1-loaddata.R")
+
+library(srvyr)
+
+## Convert resulting dataframe from Survey into "survey obbject" using sample ddesign
+#data.design <- data %>% 
+#  as_survey_design(ids=ID_unit, weight=Prob, nest=TRUE, strata=stratum, variables= c())
+
+## Check poststratification using rake to account for non-coverage issues or non-response
+
+
+## Compute margin of errors
+
+
+```
+
+## Introduction
+
+UNHCR needs to understand the reasons and mechanisms at work that inform the decision of Syrians to stay in or leave their current country of asylum. Understanding Attitude, perception and intentions, even at the preliminary phase, requires quantitative method (pool surveys) that provides access to quantitative and qualitative information. Such surveys reveal misconceptions or misunderstandings that may represent obstacles to  specific activities or potential barriers to behavior change. They essentially record “opinions” and are “declarative” (i.e., relates to statements). Pool surveys reveals what was said, but because of the considerable gaps between what is said and what is done, they represent only one component of the proposed approach. 
+UNHCR understands that a refugee’s return to her/his country of origin might be temporary or, depending on the circumstances, permanent.
+
+A phone survey was conducted on a total of 
+The result will allow the organisation to conduct appropriate advocacy and to plan for effective support programmes, when needed. 
+
+
+
+
+
+```{r setup2, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
+    ## get list of all nominal variables
+    selectone <- as.character(dico[dico$type=="select_one", c("fullname")])
+    
+    ## Check that those variable are in the dataset
+    selectdf <- dico[dico$type=="select_one"  , c("fullname","listname","label","name","variable","disaggregation","qrepeat")]
+    
+    check <- as.data.frame(names(data))
+    names(check)[1] <- "fullname"
+    check$id <- row.names(check)
+    selectdf2 <- join(x=selectdf, y=check, by="fullname",  type="left")
+    selectdf3 <- selectdf2[!is.na(selectdf2$id), ]
+    selectone <- as.character(selectdf3[, c("fullname")])
+    selectonet <- as.data.frame(selectone)
+   
+    data.single <- data [ selectone ]
+    ## force to data frame 
+    data.single <- as.data.frame(data.single)
+    #str(data.single)
+    data.single <- kobo_label(data.single, dico)
+    
+```
+
+## Intention
+
+### Comparison of intention per country
+
+```{r intention, echo=FALSE, warning=FALSE}
+## Would you consider going back to Syria in the near or not too distant future?
+i <-6
+    variablename <- names(data.single)[i]
+    title <- attributes(data.single)$variable.labels[i]
+
+    ##### Set up factor level order --
+
+    ## variable ordinal or not
+
+    ## if variable is not ordinal, Proportion table used to order the levels of the factor
+    
+    frequ <- table (data.single[ , i])
+    
+    
+    #frequ <- as.data.frame(table(data.single[ , i]))
+    #frequ <- as.data.frame(table(data.single[[i]]))
+    
+    data.single[ , i] <- factor(data.single[ , i], levels=names(frequ[order(frequ, decreasing = TRUE)]))
+    
+    totalanswer <- nrow(data.single)
+    ## subsetting to those who replied
+    
+    data.single1 <- data.single[ !(is.na(data.single[ ,i])), ]
+    
+    percentreponse <- paste(round((nrow(data.single1)/totalanswer)*100,digits=1),"%",sep="")
+    
+
+    #levels(data.single[ , i])
+    
+    ## and now the graph
+    plotfreq <- ggplot(data.single1, aes(data.single1[ , i])) +
+      geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+               fill="#2a87c8",colour="#2a87c8") +
+      #facet_wrap(~subgov, ncol=4) +
+	  #    geom_text(aes(label = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x])))), hjust = 1.1, color = "#FFFFFF") +
+      guides(fill=FALSE) +
+      ylab("Frequency") +
+      scale_y_continuous(labels=percent)+
+      xlab("") +
+      coord_flip() +
+      # coord_fixed() + ##used to maintain the adspect ratio of the plot when it needs to be saved
+      ggtitle(title,  
+              subtitle = paste0("Select_one question: Response rate to this question is ",percentreponse," of the total."))+
+      
+      theme(plot.title=element_text(face="bold", size=9),
+            plot.background = element_rect(fill = "transparent",colour = NA))
+
+   plotfreq
+```
+
+
+
+### Comparison of intention per country and Governorate of Origin
+
+```{r intention.country, echo=FALSE, warning=FALSE}
+
+    ## and now the graph
+    plotfreq2 <- ggplot(data.single1, aes(data.single1[ , i])) +
+      geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+               fill="#2a87c8",colour="#2a87c8") +
+      facet_grid(COOL1 ~ ctr) +
+	  #    geom_text(aes(label = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x])))), hjust = 1.1, color = "#FFFFFF") +
+      guides(fill=FALSE) +
+      ylab("Frequency") +
+      scale_y_continuous(labels=percent)+
+      xlab("") +
+      coord_flip() +
+      # coord_fixed() + ##used to maintain the adspect ratio of the plot when it needs to be saved
+      ggtitle(title,  
+              subtitle = paste0("Select_one question: Response rate to this question is ",percentreponse," of the total."))+
+      
+      theme(plot.title=element_text(face="bold", size=9),
+            plot.background = element_rect(fill = "transparent",colour = NA))
+
+   plotfreq2
+```
+
+### Comparison of intention per occurence of specific needs & Case size
+
+
+***
+
+## Factors influencing intention
+
+### Comparison of factors per country
+
+### Comparison of factors per country and Governorate of Origin
+
+### Comparison of factors per occurence of specific need & Case size
+
+
+***
+
+## Priorities & Modalities
+
+### Comparison of Priorities & Modalities per country
+
+### Comparison of Priorities & Modalitiess per country and Governorate of Origin
+
+### Comparison of Priorities & Modalities per occurence of specific need & Case size
+
+***
+
+## Conditions for return
+
+### Comparison of Conditions for return per country
+
+### Comparison of Conditions for return per country and Governorate of Origin
+
+### Comparison of Conditions for return per occurence of specific need & Case size
+
+
+
+
+# Annex
+
+## Sampling strategy
+
+The reliability of a survey and the consistency of its result is heavily linked to the sampling strategy used to perform it. Through stratification, the sampling strategy should allow for good representatively of the population characteristics keeping considerations to limit the sample size within acceptable ranges. 
+
+### Definition of the strata
+In statistical surveys, when subpopulations within an overall population vary, it is advantageous to sample each subpopulation (stratum) independently. Stratification is the process of dividing members of the population into homogeneous subgroups before randomly sampling respondents.
+
+In the current case, based on the analysis of previous voluntary departure, it is assumed that two levels of stratification are required:
+ 1.	The first level define the distinct groups that will be used to define sample. This level will be based on the main discriminators for the intention to return are both the Country of Asylum and the Governorate in the Country of Origin. 
+ 2.	The second level is used for proportional allocation of characteristics within each sample. This will include characteristics that are foreseen has having important correlation with decision to return :
+ *	Occurrence of Specific Needs and Military service obligation within the case (3 classes)
+ *	Case size – Re-categorized using the following  3 classes (1 persons; 2 persons; 3 to 5 persons)
+
+The strategy assumes that intention are actually homogeneous at the case level (i.e. Household) and that as a matter of rule, the return will not imply family separation.
+
+### Calculation of the sample size for each country 
+
+With the stratified random sample, there is an equal chance (probability) of selecting each unit from within a particular stratum (group) of the population when creating the sample. In order to detect differentiation of intention depending on the specific area of origin within Syria, the number of cases per Main Governorate of Origin within each country of Asylum can be used to define the strata.
+
+Governorate of Origin are grouped together if the number of cases per governorate does not exceed 5% of the total number of case in the country asylum. This approach allows to reduce the numbers of strata in order to avoid oversampling some governorate of origin. 
+
+In order to keep sample size at a reasonable level, the following variables are used:
+ *	Confidence interval: 90% is suggested	
+ *	Width of Confidence Interval (i.e. margin of error): + or 5% is suggested
+ *	Expected value of Attribute: The main attribute is “decision to return”. Based on the recent intention survey, we assume the attribute, 30% is suggested
+
+### Sample response
+
