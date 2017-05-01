@@ -143,6 +143,19 @@ names(samplefull)[names(samplefull)=="CaseNo"] <- "refugeenumber"
 samplefull$COO_L1[samplefull$COO_L1=="Rural Damascus" ] <- "Rural.Damascus"
 levels(as.factor(samplefull$COO_L1))
 
+
+samplefull$size[samplefull$size=="1"] <- "Case.size.1"              
+samplefull$size[samplefull$size=="2"] <- "Case.size.2"    
+samplefull$size[samplefull$size=="_3_5"] <- "Case.size.3.to.5"          
+samplefull$size[samplefull$size=="5"] <- "Case.size.over.5"
+levels(as.factor(samplefull$size))
+
+samplefull$needs <- as.character(samplefull$needs)
+samplefull$needs[samplefull$needs=="0"] <- "No.specific.needs"          
+samplefull$needs[samplefull$needs=="1"] <- "Has.specific.needs"
+levels(as.factor(samplefull$needs))
+
 ############################################################
 
 write.csv(samplefull,"data/samplefull.csv", row.names = FALSE)
+

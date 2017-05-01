@@ -44,6 +44,7 @@ packages <- c(
   "extrafont", ##" load additional font
   "hexbin", ## Hexagrid viz
   "xkcd", ## Style from the xkcd comics
+  "likert", "tidyverse", "sjPlot",
   "scatterplot3d",
   "corrplot", # Visualiation of correlation Matrix
   "igraph", #network analysis and visualisation
@@ -166,13 +167,16 @@ if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
 
 rm(packages)
 
+#Sys.getenv("R_LIBS_USER")
 
+#remove.packages("tibble")
+#install.packages("tibble")
 
 #gpclibPermit()
-
+library(sjPlot)
 # loads packages into memory
 library(stringr)
-library(stringi)
+#ylibrary(stringi)
 #library(lattice)
 #library(rattle)
 library(car)
@@ -184,6 +188,8 @@ library(zoo) ## Manage reformatting of date
 library(reshape2) ## Restructure data between wide and long format before plotting them - melt and cast
 library(maptools) ## Create maps
 library(rgdal) ## Open geographic files
+library(likert)
+library(tidyverse)
 library(rgeos)
 library(ggmap) ## get background map from google map
 library(sp) ## Spatial library
@@ -205,3 +211,9 @@ library(plyr)
 library(FactoMineR)
 
 library(srvyr)
+
+
+library(xtable)
+library(knitr)
+library(pander)
+library(rmarkdown)

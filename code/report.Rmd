@@ -1,5 +1,5 @@
 ---
-title: "Intention Survey - Syrian Refugees in Iraq, Jordan & Egypt"
+title: "Intention Survey  - Preliminary exploration of results - Syrian Refugees in Iraq, Jordan & Egypt"
 author: "UNHCR"
 date: "`r Sys.Date()`"
 output: 
@@ -15,177 +15,1523 @@ output:
 setwd("D:/R-project/intention")
 source("code/1-loaddata.R")
 
-library(srvyr)
+### This part is to manage the survey objects - i.e. With proper statistical adjustment, non-representative polls can be used to generate accurate election forecasts, and often faster and at less expense than traditional survey methods
 
+library(srvyr)
 ## Convert resulting dataframe from Survey into "survey obbject" using sample ddesign
 #data.design <- data %>% 
 #  as_survey_design(ids=ID_unit, weight=Prob, nest=TRUE, strata=stratum, variables= c())
 
 ## Check poststratification using rake to account for non-coverage issues or non-response
-
+## need to use rake function from survey package
 
 ## Compute margin of errors
+## Need to use library(samplesize4surveys)
 
 
 ```
 
-## Introduction
+
+***
+***
+# Executive summary and main findings.
+
+
+
+***
+# Introduction
 
 UNHCR needs to understand the reasons and mechanisms at work that inform the decision of Syrians to stay in or leave their current country of asylum. Understanding Attitude, perception and intentions, even at the preliminary phase, requires quantitative method (pool surveys) that provides access to quantitative and qualitative information. Such surveys reveal misconceptions or misunderstandings that may represent obstacles to  specific activities or potential barriers to behavior change. They essentially record “opinions” and are “declarative” (i.e., relates to statements). Pool surveys reveals what was said, but because of the considerable gaps between what is said and what is done, they represent only one component of the proposed approach. 
 UNHCR understands that a refugee’s return to her/his country of origin might be temporary or, depending on the circumstances, permanent.
 
-A phone survey was conducted on a total of 
-The result will allow the organisation to conduct appropriate advocacy and to plan for effective support programmes, when needed. 
+In order to analyse the profile of intention, a stratified random sample of cases was generated for each country to account for Governorate of Origine, Family Size and occurence of specific needs in the case. The response rate for the survey was __`r paste(round((nrow(data)/nrow(samplefull))*100,digits=1),"%",sep="")`__ (see Annex for more details on the sampling strategy: due to this low response rate, the original margin of errors and the weight of each record had to be recalculated) 
+
+The result of this survey will allow the organisation to conduct appropriate advocacy and to plan for effective support programmes, when needed. This present reports is an initial exploration of the raw data from the survey. __It does not include yet qualitative narrative and intepretation of the results__.
 
 
+# Intention
 
-
-
-```{r setup2, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
-    ## get list of all nominal variables
-    selectone <- as.character(dico[dico$type=="select_one", c("fullname")])
-    
-    ## Check that those variable are in the dataset
-    selectdf <- dico[dico$type=="select_one"  , c("fullname","listname","label","name","variable","disaggregation","qrepeat")]
-    
-    check <- as.data.frame(names(data))
-    names(check)[1] <- "fullname"
-    check$id <- row.names(check)
-    selectdf2 <- join(x=selectdf, y=check, by="fullname",  type="left")
-    selectdf3 <- selectdf2[!is.na(selectdf2$id), ]
-    selectone <- as.character(selectdf3[, c("fullname")])
-    selectonet <- as.data.frame(selectone)
-   
-    data.single <- data [ selectone ]
-    ## force to data frame 
-    data.single <- as.data.frame(data.single)
-    #str(data.single)
-    data.single <- kobo_label(data.single, dico)
-    
-```
-
-## Intention
-
-### Comparison of intention per country
-
-```{r intention, echo=FALSE, warning=FALSE}
+```{r intention, echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=2}
 ## Would you consider going back to Syria in the near or not too distant future?
-i <-6
-    variablename <- names(data.single)[i]
-    title <- attributes(data.single)$variable.labels[i]
+data.goingback<- as.data.frame(data[ , c("group_intro.goingback")])
+names(data.goingback)[1] <- "Would you consider going back to Syria in the near or not too distant future?"
 
-    ##### Set up factor level order --
+goingback.likert <- likert(data.goingback)
 
-    ## variable ordinal or not
+plot(goingback.likert)
 
-    ## if variable is not ordinal, Proportion table used to order the levels of the factor
-    
-    frequ <- table (data.single[ , i])
-    
-    
-    #frequ <- as.data.frame(table(data.single[ , i]))
-    #frequ <- as.data.frame(table(data.single[[i]]))
-    
-    data.single[ , i] <- factor(data.single[ , i], levels=names(frequ[order(frequ, decreasing = TRUE)]))
-    
-    totalanswer <- nrow(data.single)
-    ## subsetting to those who replied
-    
-    data.single1 <- data.single[ !(is.na(data.single[ ,i])), ]
-    
-    percentreponse <- paste(round((nrow(data.single1)/totalanswer)*100,digits=1),"%",sep="")
-    
+castdata.goingback <- as.data.frame(prop.table(table(data$group_intro.goingback)))
+names(castdata.goingback)[1] <- "Intention"
+castdata.goingback$Frequency <- paste(round(castdata.goingback$Freq * 100 ,digits=1),"%",sep="")
+castdata.goingback <- castdata.goingback[ , c("Intention","Frequency")]
 
-    #levels(data.single[ , i])
-    
-    ## and now the graph
-    plotfreq <- ggplot(data.single1, aes(data.single1[ , i])) +
-      geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
-               fill="#2a87c8",colour="#2a87c8") +
-      #facet_wrap(~subgov, ncol=4) +
-	  #    geom_text(aes(label = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x])))), hjust = 1.1, color = "#FFFFFF") +
-      guides(fill=FALSE) +
-      ylab("Frequency") +
-      scale_y_continuous(labels=percent)+
-      xlab("") +
-      coord_flip() +
-      # coord_fixed() + ##used to maintain the adspect ratio of the plot when it needs to be saved
-      ggtitle(title,  
-              subtitle = paste0("Select_one question: Response rate to this question is ",percentreponse," of the total."))+
-      
-      theme(plot.title=element_text(face="bold", size=9),
-            plot.background = element_rect(fill = "transparent",colour = NA))
+## Print table
+#print(pandoc.table(castdata.goingback, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+kable(castdata.goingback)
 
-   plotfreq
+
+```
+
+## Comparison of intention per country
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=3}
+goingback.likert.ctr <- likert(data.goingback, grouping = data$ctr)
+plot(goingback.likert.ctr)
+
+castdata.goingback.ctr <- as.data.frame(prop.table(table(data$group_intro.goingback,data$ctr),2))
+names(castdata.goingback.ctr)[1] <- "Intention"
+names(castdata.goingback.ctr)[2] <- "Country"
+castdata.goingback.ctr$Frequency <- paste(round(castdata.goingback.ctr$Freq * 100 ,digits=1),"%",sep="")
+castdata.goingback.ctr <- castdata.goingback.ctr[ , c("Intention","Country","Frequency")]
+
+#print(pandoc.table(castdata.goingback.ctr, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+kable(castdata.goingback.ctr)
+
+```
+
+## Comparison of intention per Governorate of origin
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=3}
+goingback.likert.COO_L1 <- likert(data.goingback, grouping = data$COO_L1)
+
+plot(goingback.likert.COO_L1)
+
+```
+
+## Comparison of intention per Case size
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=3}
+goingback.likert.size <- likert(data.goingback, grouping = data$size)
+
+plot(goingback.likert.size)
+
+```
+
+## Comparison of intention per occurrence of specific needs
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE, fig.width=10, fig.height=3}
+goingback.likert.needs <- likert(data.goingback, grouping = data$needs)
+plot(goingback.likert.needs)
+
+```
+
+
+***
+
+# Factors influencing intention for those NOT ready or undecided to return.
+
+
+## Comparison of factors for not ready
+
+```{r , echo=FALSE, warning=FALSE, fig.height=10}
+data.reasonsnot <- as.data.frame(data[ , c( "reasonnot.propertydoc", "reasonnot.well_settled", 
+                                            "reasonnot.displacedcommunity", "reasonnot.fearsretaliation", 
+                                            "reasonnot.resettlement", "reasonnot.no_educ", 
+                                            "reasonnot.fears", "reasonnot.resttleinterest", 
+                                            "reasonnot.nosaving", "reasonnot.familydecision", 
+                                            "reasonnot.fearsdetention", "reasonnot.registerchild", 
+                                            "reasonnot.livelihood", "reasonnot.avoid_military", 
+                                            "reasonnot.no_medservice", "reasonnot.spec_need", 
+                                            "reasonnot.bad_secu", "reasonnot.lackshelter", 
+                                            "reasonnot.civildoc", "reasonnot.nowaterservice", 
+                                            "reasonnot.noelect")])
+data.reasonsnot$id <- rownames(data.reasonsnot)
+meltdata.reasonsnot <- melt(data.reasonsnot,id=c("id"))
+meltdata.reasonsnot <- meltdata.reasonsnot[meltdata.reasonsnot$value!="Not selected", ]
+meltdata.reasonsnot <- meltdata.reasonsnot[meltdata.reasonsnot$value!="Not replied", ]
+
+castdata.reasonsnot <- as.data.frame(prop.table(table(meltdata.reasonsnot$value)))
+castdata.reasonsnot$Var1 <-factor(castdata.reasonsnot$Var1, levels=castdata.reasonsnot[order(castdata.reasonsnot$Freq), "Var1"])
+
+
+goingback.reasonsnot  <-  ggplot(castdata.reasonsnot, aes(x = Var1, y=Freq)) +
+  geom_bar( stat = "identity",
+            fill="#2a87c8",colour="#2a87c8") +
+  coord_flip() +
+  #scale_fill_brewer(palette = "RdYlBu") + 
+  guides(fill = guide_legend(reverse=TRUE)) +
+  ylab("") +
+  xlab("") +
+  ggtitle("Why do you not or would you never consider going back to Syria?") +
+  labs(fill="")+
+  scale_y_continuous(labels=percent)+
+  theme(plot.title = element_text(size=12, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  #theme(axis.text.y=element_blank())+
+  theme(legend.position="top", legend.direction="horizontal") 
+goingback.reasonsnot 
+
+
+```
+
+
+## Comparison of factors for undecided
+
+```{r , echo=FALSE, warning=FALSE, fig.height=10}
+data.reasonundecided <- as.data.frame(data[ , c( "reasonundecided.access_to_school", 
+                  "reasonundecided.electrictiy", "reasonundecided.amnesty", 
+                  "reasonundecided.wait_resttle", "reasonundecided.shelter", 
+                  "reasonundecided.political", "reasonundecided.familydecision", 
+                  "reasonundecided.community", "reasonundecided.livelihood", 
+                  "reasonundecided.water", "reasonundecided.wait_school", 
+                  "reasonundecided.health", "reasonundecided.reliableinfo", 
+                  "reasonundecided.civildoc", "reasonundecided.spec_need", 
+                  "reasonundecided.security", "reasonundecided.desert", 
+                  "reasonundecided.wait_info")])
+data.reasonundecided$id <- rownames(data.reasonundecided)
+meltdata.reasonundecided <- melt(data.reasonundecided,id=c("id"))
+meltdata.reasonundecided <- meltdata.reasonundecided[meltdata.reasonundecided$value!="Not selected", ]
+meltdata.reasonundecided <- meltdata.reasonundecided[meltdata.reasonundecided$value!="Not replied", ]
+
+castdata.reasonundecided <- as.data.frame(prop.table(table(meltdata.reasonundecided$value)))
+castdata.reasonundecided$Var1 <-factor(castdata.reasonundecided$Var1, levels=castdata.reasonundecided[order(castdata.reasonundecided$Freq), "Var1"])
+
+
+goingback.reasonundecided  <-  ggplot(castdata.reasonundecided, aes(x = Var1, y=Freq)) +
+  geom_bar( stat = "identity",
+            fill="#2a87c8",colour="#2a87c8") +
+  coord_flip() +
+  #scale_fill_brewer(palette = "RdYlBu") + 
+  guides(fill = guide_legend(reverse=TRUE)) +
+  ylab("") +
+  xlab("") +
+  ggtitle("If you are undecided/don't know about returning to Syria, what would help you decide?") +
+  labs(fill="")+
+  scale_y_continuous(labels=percent)+
+  theme(plot.title = element_text(size=12, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  #theme(axis.text.y=element_blank())+
+  theme(legend.position="top", legend.direction="horizontal") 
+goingback.reasonundecided 
+
+
 ```
 
 
 
-### Comparison of intention per country and Governorate of Origin
+***
 
-```{r intention.country, echo=FALSE, warning=FALSE}
+# Factors influencing intention for those ready to return.
 
-    ## and now the graph
-    plotfreq2 <- ggplot(data.single1, aes(data.single1[ , i])) +
-      geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
-               fill="#2a87c8",colour="#2a87c8") +
-      facet_grid(COOL1 ~ ctr) +
-	  #    geom_text(aes(label = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x])))), hjust = 1.1, color = "#FFFFFF") +
-      guides(fill=FALSE) +
-      ylab("Frequency") +
-      scale_y_continuous(labels=percent)+
-      xlab("") +
-      coord_flip() +
-      # coord_fixed() + ##used to maintain the adspect ratio of the plot when it needs to be saved
-      ggtitle(title,  
-              subtitle = paste0("Select_one question: Response rate to this question is ",percentreponse," of the total."))+
-      
-      theme(plot.title=element_text(face="bold", size=9),
-            plot.background = element_rect(fill = "transparent",colour = NA))
+A total of __`r nrow(data[!(is.na(data$reasons.security)) ,])`__ respondents indicated their intention to return.
 
-   plotfreq2
+## Comparison of factors
+
+```{r reasons, echo=FALSE, warning=FALSE, fig.height=10}
+data.reasons <- data[!(is.na(data$reasons.security)) , c("reasons.security", "reasons.political", 
+                          "reasons.work", "reasons.no_service", "reasons.shelter", 
+                          "reasons.property", "reasons.educ", "reasons.assit_return", 
+                           "reasons.avoid_military", "reasons.recruitment", "reasons.specific_need", 
+                           "reasons.resettlement_pipe", "reasons.well_settled", "reasons.wait_info", 
+                            "reasons.wait_school", "reasons.family_reunifi", "reasons.no_saving", 
+                           "reasons.expired_residency", "reasons.familyreturn", "reasons.Communit", 
+                            "reasons.problems", "reasons.docu_from_syria", "reasons.land_property")]
+
+data.reasons <- kobo_label(data.reasons,dico)
+
+
+for (i in 1:23) {
+  data.reasons[ , i] <- factor(data.reasons[ , i],levels=c('Not relevant','No impact','Little impact','Has an impact'))
+  names(data.reasons)[i] <- attributes(data.reasons)$variable.labels[i]
+  #levels(as.factor(data$group_intro.goingback))
+}
+
+reasons.likert <- likert(data.reasons)
+
+plot(reasons.likert)
+
+
 ```
 
-### Comparison of intention per occurence of specific needs & Case size
+
+## Comparison of factors per country 
+
+```{r reasonsctr, echo=FALSE, warning=FALSE, fig.width=10, fig.height=10}
+
+data.reasons1 <- data[!(is.na(data$reasons.security)) , c("reasons.security",
+                                                          "reasons.work", "reasons.no_service",
+                                                          "reasons.family_reunifi","reasons.wait_school",
+                                                          "reasons.political",  "reasons.shelter"#, 
+                                                        #  "reasons.assit_return","reasons.well_settled",
+                                                        #  "reasons.educ",  "reasons.specific_need"
+                                                          #,
+                                                        ##
+                                                        # "reasons.avoid_military", "reasons.recruitment",
+                                                        # "reasons.property",  "reasons.resettlement_pipe", 
+                                                        #  "reasons.no_saving",  "reasons.wait_info",
+                                                        # "reasons.expired_residency", "reasons.familyreturn", "reasons.Communit", 
+                                                        #  "reasons.problems", "reasons.docu_from_syria", "reasons.land_property"
+                                                        )]
+
+data.reasons1 <- kobo_label(data.reasons1,dico)
+
+#### Second chart
+data.reasons2 <- data[!(is.na(data$reasons.security)) , c( #"reasons.security",
+                                                          #"reasons.work", "reasons.no_service",
+                                                          #"reasons.family_reunifi","reasons.wait_school",
+                                                          #"reasons.political",  "reasons.shelter", 
+                                                          "reasons.assit_return","reasons.well_settled",
+                                                          "reasons.educ",  "reasons.specific_need",
+                                                         
+                                                         "reasons.avoid_military", "reasons.recruitment",
+                                                         "reasons.property",  "reasons.resettlement_pipe"#, 
+                                                         # "reasons.no_saving",  "reasons.wait_info",
+                                                        # "reasons.expired_residency", "reasons.familyreturn", "reasons.Communit", 
+                                                         # "reasons.problems", "reasons.docu_from_syria", "reasons.land_property"
+                                                        )]
+
+data.reasons2 <- kobo_label(data.reasons2,dico)
+
+#### Second chart
+data.reasons3 <- data[!(is.na(data$reasons.security)) , c( #"reasons.security",
+                                                          #"reasons.work", "reasons.no_service",
+                                                          #"reasons.family_reunifi","reasons.wait_school",
+                                                          #"reasons.political",  "reasons.shelter", 
+                                                          #"reasons.assit_return","reasons.well_settled",
+                                                          #"reasons.educ",  "reasons.specific_need"
+                                                          #,
+                                                        ##
+                                                        # "reasons.avoid_military", "reasons.recruitment",
+                                                        # "reasons.property",  "reasons.resettlement_pipe", 
+                                                          "reasons.no_saving",  "reasons.wait_info",
+                                                         "reasons.expired_residency", "reasons.familyreturn", "reasons.Communit", 
+                                                          "reasons.problems", "reasons.docu_from_syria", "reasons.land_property")]
+
+data.reasons3 <- kobo_label(data.reasons3,dico)
+
+for (i in 1:ncol(data.reasons1)) {
+  data.reasons1[ , i] <- factor(data.reasons1[ , i],levels=c('Not relevant','No impact','Little impact','Has an impact'))
+  names(data.reasons1)[i] <- attributes(data.reasons1)$variable.labels[i]
+  #levels(as.factor(data$group_intro.goingback))
+}
+
+
+for (i in 1:ncol(data.reasons2)) {
+  data.reasons2[ , i] <- factor(data.reasons2[ , i],levels=c('Not relevant','No impact','Little impact','Has an impact'))
+  names(data.reasons2)[i] <- attributes(data.reasons2)$variable.labels[i]
+  #levels(as.factor(data$group_intro.goingback))
+}
+
+for (i in 1:ncol(data.reasons3)) {
+  data.reasons3[ , i] <- factor(data.reasons3[ , i],levels=c('Not relevant','No impact','Little impact','Has an impact'))
+  names(data.reasons3)[i] <- attributes(data.reasons3)$variable.labels[i]
+  #levels(as.factor(data$group_intro.goingback))
+}
+
+reasons.likert.ctr1 <- likert(data.reasons1, grouping = data[!(is.na(data$reasons.security)) , c("ctr")])
+plot(reasons.likert.ctr1)
+
+reasons.likert.ctr2 <- likert(data.reasons2, grouping = data[!(is.na(data$reasons.security)) , c("ctr")])
+plot(reasons.likert.ctr2)
+
+reasons.likert.ctr3 <- likert(data.reasons3, grouping = data[!(is.na(data$reasons.security)) , c("ctr")])
+plot(reasons.likert.ctr3)
+```
+
+
+## Comparison of factors per Governorate 
+
+```{r reasonsgov, echo=FALSE, warning=FALSE, fig.width=10, fig.height=10}
+
+
+reasons.likert.cool11 <- likert(data.reasons1, grouping = data[!(is.na(data$reasons.security)) , c("COO_L1")])
+plot(reasons.likert.cool11)
+
+reasons.likert.cool12 <- likert(data.reasons2, grouping = data[!(is.na(data$reasons.security)) , c("COO_L1")])
+plot(reasons.likert.cool12)
+
+reasons.likert.cool13 <- likert(data.reasons3, grouping = data[!(is.na(data$reasons.security)) , c("COO_L1")])
+plot(reasons.likert.cool13)
+
+
+```
+
+## Comparison of factors per Case size
+
+```{r reasonscase, echo=FALSE, warning=FALSE, fig.width=10, fig.height=10}
+
+reasons.likert.size1 <- likert(data.reasons1, grouping = data[!(is.na(data$reasons.security)) , c("size")])
+plot(reasons.likert.size1)
+
+reasons.likert.size2 <- likert(data.reasons2, grouping = data[!(is.na(data$reasons.security)) , c("size")])
+plot(reasons.likert.size2)
+
+reasons.likert.size3 <- likert(data.reasons3, grouping = data[!(is.na(data$reasons.security)) , c("size")])
+plot(reasons.likert.size3)
+
+
+```
+
+***
+
+# Modalities for those who have the intention to return
+
+## For all countries
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-52
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-118
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-119
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-120
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-121
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-122
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+## Comparison per country
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-52
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-118
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-119
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+    i <-120
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-121
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+    i <-122
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+
+
+## Comparison per Governorate of Origin
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-52
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-118
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-119
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+    i <-120
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-121
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=5}
+    i <-122
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ COO_L1, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
 
 
 ***
 
-## Factors influencing intention
+# Conditions for return
 
-### Comparison of factors per country
+## For all countries
 
-### Comparison of factors per country and Governorate of Origin
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-123
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
 
-### Comparison of factors per occurence of specific need & Case size
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
 
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
 
-***
+plotfreq
 
-## Priorities & Modalities
-
-### Comparison of Priorities & Modalities per country
-
-### Comparison of Priorities & Modalitiess per country and Governorate of Origin
-
-### Comparison of Priorities & Modalities per occurence of specific need & Case size
-
-***
-
-## Conditions for return
-
-### Comparison of Conditions for return per country
-
-### Comparison of Conditions for return per country and Governorate of Origin
-
-### Comparison of Conditions for return per occurence of specific need & Case size
+```
 
 
 
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-124
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
 
-# Annex
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
 
-## Sampling strategy
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-125
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-126
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-127
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-128
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-129
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+## Comparison of condition for return  per Country
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-123
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-124
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-125
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-126
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-127
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-128
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-129
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ ctr, ncol=3) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+## Comparison of conditions for return per intention
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-123
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-124
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-125
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-126
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-127
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-128
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+```{r , echo=FALSE, warning=FALSE, fig.width=10, fig.height=3}
+    i <-129
+variablename <- names(data)[i]
+title <- attributes(data)$variable.labels[i]
+frequ <- table (data[ , i])
+data[ , i] <- factor(data[ , i], levels=names(frequ[rev(order(frequ, decreasing = TRUE))]))
+
+## subsetting to those who replied
+data1 <- data[ !(is.na(data[ ,i])), ]
+
+## and now the graph
+plotfreq <- ggplot(data1, aes(data1[ , i])) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  facet_wrap(~ group_intro.goingback, ncol=4) +
+  guides(fill=FALSE) +
+  ylab("Frequency") +
+  scale_y_continuous(labels=percent)+
+  xlab("") +
+  coord_flip() +
+  ggtitle(title)+
+  theme(plot.title=element_text(face="bold", size=9),
+        plot.background = element_rect(fill = "transparent",colour = NA))
+
+plotfreq
+
+```
+
+
+
+
+# Annex: Sampling strategy
 
 The reliability of a survey and the consistency of its result is heavily linked to the sampling strategy used to perform it. Through stratification, the sampling strategy should allow for good representatively of the population characteristics keeping considerations to limit the sample size within acceptable ranges. 
 
@@ -193,10 +1539,14 @@ The reliability of a survey and the consistency of its result is heavily linked 
 In statistical surveys, when subpopulations within an overall population vary, it is advantageous to sample each subpopulation (stratum) independently. Stratification is the process of dividing members of the population into homogeneous subgroups before randomly sampling respondents.
 
 In the current case, based on the analysis of previous voluntary departure, it is assumed that two levels of stratification are required:
+
  1.	The first level define the distinct groups that will be used to define sample. This level will be based on the main discriminators for the intention to return are both the Country of Asylum and the Governorate in the Country of Origin. 
- 2.	The second level is used for proportional allocation of characteristics within each sample. This will include characteristics that are foreseen has having important correlation with decision to return :
- *	Occurrence of Specific Needs and Military service obligation within the case (3 classes)
- *	Case size – Re-categorized using the following  3 classes (1 persons; 2 persons; 3 to 5 persons)
+ 
+ 2.	The second level is used for proportional allocation of characteristics within each sample. This will include characteristics that are foreseen has having important correlation with decision to return : 
+ 
+ *	Occurrence of Specific Needs  (2 classes)
+ 
+ *	Case size – Re-categorized using the following  5 classes (1 persons; 2 persons; 3 to 5 persons; over 5 persons)
 
 The strategy assumes that intention are actually homogeneous at the case level (i.e. Household) and that as a matter of rule, the return will not imply family separation.
 
@@ -206,10 +1556,23 @@ With the stratified random sample, there is an equal chance (probability) of sel
 
 Governorate of Origin are grouped together if the number of cases per governorate does not exceed 5% of the total number of case in the country asylum. This approach allows to reduce the numbers of strata in order to avoid oversampling some governorate of origin. 
 
-In order to keep sample size at a reasonable level, the following variables are used:
- *	Confidence interval: 90% is suggested	
+In order to keep sample size at a reasonable level, the following variables are used: 
+
+ *	Confidence interval: 95% is suggested	
+ 
  *	Width of Confidence Interval (i.e. margin of error): + or 5% is suggested
+ 
  *	Expected value of Attribute: The main attribute is “decision to return”. Based on the recent intention survey, we assume the attribute, 30% is suggested
 
-### Sample response
+### Sample response & final weighting 
 
+When data are used without weights, each record counts the same as any other record and this implies the following assumptions 
+
+ *  Each record has equal probabilities of being selected.  
+ 
+ *  Noncoverage and nonresponse are equal among all segments of the population. 
+ 
+During data collection, the conditions that actually happen may be different than the preceding assumptions, and the differences can become large enough to affect the results of the data set. Weighting each record appropriately can help to adjust for these differences (or assumption violations). 
+
+Another reason for weighting, one that is conceptually unrelated to the first reason, is to make the total number of cases equal to some desired number.  
+Such _raking_ (or "[post-stratification](https://www.r-bloggers.com/survey-computing-your-own-post-stratification-weights-in-r/") serves as a blanket adjustment for noncoverage and nonresponse and forces the total number of cases to equal population estimates for each geographic region. 
