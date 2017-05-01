@@ -17,6 +17,6 @@ Some selected reading reference to build a report from a survey
  
  * [An introduction to the srvyr package](https://cran.r-project.org/web/packages/srvyr/vignettes/srvyr-vs-survey.html)
  
- * [Analyzing public health data in r](https://www.r-bloggers.com/analyzing-public-health-data-in-r/)
+ * [Analyzing public health data in r](http://www.arilamstein.com/blog/2016/06/20/public-health-r/) 
  
  * [Displaying margin of error or anything relating to uncertainty](https://www.r-bloggers.com/visualizing-survey-data-comparison-between-observations/)
