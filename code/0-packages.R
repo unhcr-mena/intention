@@ -156,8 +156,10 @@ packages <- c(
   "devtools", # package used to load packages hosted in github -- 
   
   "gmailr", # Access gmail api
-
-  "rattle" ## GUI for data mining
+  "rattle", ## GUI for data mining
+  
+  ## used to generate reports
+  "knitr", "pander", "xtable", "rmarkdown"
 )
 
 ## identify packages not installed yet
@@ -167,13 +169,21 @@ if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
 
 rm(packages)
 
+#source("https://raw.githubusercontent.com/Edouard-Legoupil/koboloadeR/master/inst/script/install_github.R")
+#install.packages("devtools")
+library("devtools")
+## setInternet2(TRUE)
+#install_github("Edouard-Legoupil/koboloadeR")
+## https://github.com/Edouard-Legoupil/koboloadeR/archive/master.zip
+library("koboloadeR")
+
 #Sys.getenv("R_LIBS_USER")
 
 #remove.packages("tibble")
 #install.packages("tibble")
 
 #gpclibPermit()
-library(sjPlot)
+#library(sjPlot)
 # loads packages into memory
 library(stringr)
 #ylibrary(stringi)
