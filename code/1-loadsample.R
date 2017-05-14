@@ -82,7 +82,31 @@ sample$needs <- as.factor(sample$needs)
 
 ##loading  case profile from progres
 progrescase <- read_csv("data/progrescase-1.csv")
+
+## Check arrivalcategory
+
+prop.table(table(progrescase$YearArrivalCategory, useNA = "ifany"))
+
+
 samplefull <- merge(x=sample, y=progrescase, by="CaseNo", all.x=TRUE)
+
+prop.table(table(samplefull$YearArrivalCategory, useNA = "ifany"))
+
+samplefull[is.na(samplefull$YearArrivalCategory), c("CaseNo") ]
+
+#samplefull$YearArrivalCategory[is.na(samplefull$YearArrivalCategory)] <- "noData"
+
+samplefull <- samplefull[!(is.na(samplefull$YearArrivalCategory)), ] 
+samplefull <- samplefull[samplefull$YearArrivalCategory != "noData", ] 
+
+samplefull$YearArrivalCategory[samplefull$YearArrivalCategory=="2011.or.before.or.unkown" ] <- "2011.or.before"
+samplefull$YearArrivalCategory[samplefull$YearArrivalCategory=="2016.and.2017" ] <- "2016.or.after"
+
+levels(as.factor(samplefull$YearArrivalCategory))
+
+
+prop.table(table(samplefull$YearArrivalCategory, useNA = "ifany"))
+
 rm(progrescase)
 #field <- as.data.frame(names(samplefull))
 #write.csv(field, "data/field.csv")
@@ -107,6 +131,7 @@ samplefull <- samplefull[ , c("CaseNo",
                               "STDEV_Age",
                               "Montharrival",
                               "YearArrival",
+                              "YearArrivalCategory",
                               "dem_relation",
                               "dem_age",
                               "dem_agegroup",
@@ -137,6 +162,7 @@ samplefull <- samplefull[ , c("CaseNo",
                               "Unaccompanied",
                               "Victim.of.Violence",
                               "Woman.at.Risk")]
+
 
 names(samplefull)[names(samplefull)=="CaseNo"] <- "refugeenumber"
 

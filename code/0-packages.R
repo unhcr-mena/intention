@@ -197,12 +197,12 @@ library(ggthemes) ## Additional themes for gplot2
 library(zoo) ## Manage reformatting of date
 library(reshape2) ## Restructure data between wide and long format before plotting them - melt and cast
 library(maptools) ## Create maps
-library(rgdal) ## Open geographic files
+#library(rgdal) ## Open geographic files
 library(likert)
 library(tidyverse)
-library(rgeos)
-library(ggmap) ## get background map from google map
-library(sp) ## Spatial library
+#library(rgeos)
+#library(ggmap) ## get background map from google map
+#library(sp) ## Spatial library
 #library(raster) ## Managing raster dataset
 library(RColorBrewer) ## Color palette
 library(classInt) ## Classififcation
@@ -218,7 +218,7 @@ library(scales)
 library(readxl)
 library(plyr)
 #library(xlsx)
-library(FactoMineR)
+#library(FactoMineR)
 
 library(srvyr)
 
