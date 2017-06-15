@@ -9,15 +9,21 @@ output:
     fig_width: 8
     toc: yes
     toc_depth: 2
+    reference_docx: style-unhcr-portrait.docx
 ---
 
 ```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
-setwd("D:/R-project/intention")
+mainDir1 <- getwd()
+setwd(mainDir1)
 source("code/1-loaddata.R")
+
+##source(paste0(mainDir1,"/1-loaddata.R"))
+
+
 
 ### This part is to manage the survey objects - i.e. With proper statistical adjustment, non-representative polls can be used to generate accurate election forecasts, and often faster and at less expense than traditional survey methods
 
-library(srvyr)
+#library(srvyr)
 ## Convert resulting dataframe from Survey into "survey obbject" using sample ddesign
 #data.design <- data %>% 
 #  as_survey_design(ids=ID_unit, weight=Prob, nest=TRUE, strata=stratum, variables= c())
@@ -82,8 +88,10 @@ names(castdata.goingback.ctr)[2] <- "Country"
 castdata.goingback.ctr$Frequency <- paste(round(castdata.goingback.ctr$Freq * 100 ,digits=1),"%",sep="")
 castdata.goingback.ctr <- castdata.goingback.ctr[ , c("Country","Intention","Frequency")]
 
+castdata.goingback.ctr2 <- dcast(castdata.goingback.ctr, Country ~ Intention,  value.var= "Frequency")
+
 #print(pandoc.table(castdata.goingback.ctr, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
-kable(castdata.goingback.ctr)
+kable(castdata.goingback.ctr2)
 
 
 goingback.likert.ctr <- likert(data.goingback, grouping = data$ctr)
@@ -92,6 +100,45 @@ plot(goingback.likert.ctr)
 
 
 ```
+
+
+## Comparison of intention - per year of arrival
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE, fig.width=6, fig.height=7}
+
+castdata.goingback.arrival <- as.data.frame(prop.table(table(data$group_intro.goingback,data$YearArrivalCategory),2))
+
+# prop.table(table(data$YearArrivalCategory, useNA = "ifany"))
+
+names(castdata.goingback.arrival)[1] <- "Intention"
+names(castdata.goingback.arrival)[2] <- "Arrival"
+castdata.goingback.arrival$Frequency <- paste(round(castdata.goingback.arrival$Freq * 100 ,digits=1),"%",sep="")
+castdata.goingback.arrival <- castdata.goingback.arrival[ , c("Arrival","Intention","Frequency")]
+
+
+
+
+
+
+
+
+#castdata.goingback.ctr2 <- dcast(castdata.goingback.ctr, Country + Intention ~ Frequency)
+
+
+castdata.goingback.arrival2 <- dcast(castdata.goingback.arrival, Arrival ~ Intention,  value.var= "Frequency")
+
+#print(pandoc.table(castdata.goingback.arrival, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+kable(castdata.goingback.arrival2)
+
+
+goingback.likert.arrival <- likert(data.goingback, grouping = data$YearArrivalCategory)
+# str(goingback.likert.arrival)
+plot(goingback.likert.arrival)
+
+
+
+```
+
 
 ## Comparison of intention - per governorate of origin
 
@@ -217,6 +264,53 @@ goingback.reasonsnot.ctr  <-  ggplot(castdata.reasonsnot.ctr, aes(x = Var1, y=Fr
   theme(legend.position="top", legend.direction="horizontal") 
 goingback.reasonsnot.ctr 
 ```
+
+## Comparison of factors - per year of arrival
+
+The following graph is for those unwilling to return. Respondents could select multiple answers.
+
+```{r , echo=FALSE, warning=FALSE, fig.height=7}
+
+data.reasonsnot.arrival <- as.data.frame(data[ , c( "reasonnot.propertydoc", "reasonnot.well_settled", 
+                                            "reasonnot.displacedcommunity", "reasonnot.fearsretaliation", 
+                                            "reasonnot.resettlement", "reasonnot.no_educ", 
+                                            "reasonnot.fears", "reasonnot.resttleinterest", 
+                                            "reasonnot.nosaving", "reasonnot.familydecision", 
+                                            "reasonnot.fearsdetention", "reasonnot.registerchild", 
+                                            "reasonnot.livelihood", "reasonnot.avoid_military", 
+                                            "reasonnot.no_medservice", "reasonnot.spec_need", 
+                                            "reasonnot.bad_secu", "reasonnot.lackshelter", 
+                                            "reasonnot.civildoc", "reasonnot.nowaterservice", 
+                                            "reasonnot.noelect",
+                                            "YearArrivalCategory")])
+data.reasonsnot.arrival$id <- rownames(data.reasonsnot.arrival)
+meltdata.reasonsnot.arrival <- melt(data.reasonsnot.arrival,id=c("id","YearArrivalCategory"))
+meltdata.reasonsnot.arrival <- meltdata.reasonsnot.arrival[meltdata.reasonsnot.arrival$value!="Not selected", ]
+meltdata.reasonsnot.arrival <- meltdata.reasonsnot.arrival[meltdata.reasonsnot.arrival$value!="Not replied", ]
+
+castdata.reasonsnot.arrival <- as.data.frame(prop.table(table(meltdata.reasonsnot.arrival$value, meltdata.reasonsnot.arrival$YearArrivalCategory),2))
+castdata.reasonsnot.arrival$Var1 <-factor(castdata.reasonsnot.arrival$Var1, levels=castdata.reasonsnot[order(castdata.reasonsnot$Freq), "Var1"])
+
+
+
+goingback.reasonsnot.arrival  <-  ggplot(castdata.reasonsnot.arrival, aes(x = Var1, y=Freq)) +
+  geom_bar( stat = "identity",
+            fill="skyblue3",colour="#2a87c8") +
+  coord_flip() +
+  facet_wrap(~ Var2, ncol=3) + 
+  guides(fill = guide_legend(reverse=TRUE)) +
+  ylab("") +
+  xlab("") +
+  ggtitle("Why do you not or would you never consider going back to Syria?") +
+  labs(fill="")+
+  scale_y_continuous(labels=percent)+
+  theme(plot.title = element_text(size=12, hjust = 0.8)) +  #, hjust=0.5
+  ###theme(axis.text.y = element_text(hjust=0)) +
+  #theme(axis.text.y=element_blank())+
+  theme(legend.position="top", legend.direction="horizontal") 
+goingback.reasonsnot.arrival 
+```
+
 
 
 ## Comparison of factors - for all countries
@@ -350,7 +444,7 @@ plot(reasons.likert)
 
 The following graph is for those willing to return.
 
-```{r reasonsctr, echo=FALSE, warning=FALSE, fig.width=7, fig.height=11}
+```{r reasonsctr, echo=FALSE, warning=FALSE, fig.width=7, fig.height=9}
 
 data.reasons1 <- data[!(is.na(data$reasons.security)) , c("reasons.security",
                                                           "reasons.work", "reasons.no_service",
@@ -464,7 +558,7 @@ plot(reasons.likert.ctr4)
 
 The following graph is for those willing to return.
 
-```{r reasonsgov, echo=FALSE, warning=FALSE, fig.width=7, fig.height=11}
+```{r reasonsgov, echo=FALSE, warning=FALSE, fig.width=7, fig.height=9}
 
 
 reasons.likert.cool11 <- likert(data.reasons1, grouping = data[!(is.na(data$reasons.security)) , c("COO_L1")])
@@ -1128,6 +1222,50 @@ goingback.priority.ctr  <-  ggplot(castdata.priority.ctr, aes(x = Var1, fill=Var
   #theme(axis.text.y=element_blank())+
   theme(legend.position="top", legend.direction="horizontal") 
 goingback.priority.ctr 
+
+```
+
+## Ranking of priorities - per per year of arrival
+
+The following graph is for those willing to return.
+
+```{r , echo=FALSE, warning=FALSE, fig.width=7, fig.height=6}
+
+data.priority.arrival <- as.data.frame(data[ !(is.na(data$grouppriority.first)) , c( "grouppriority.first",
+                                                                                 "grouppriority.second",
+                                                                                 "grouppriority.third",
+                                                                                 "YearArrivalCategory")])
+data.priority.arrival$id <- rownames(data.priority.arrival)
+
+meltdata.priority.arrival <- melt(data.priority.arrival,id=c("id","YearArrivalCategory"))
+castdata.priority.arrival <- as.data.frame(prop.table(table(meltdata.priority.arrival$value, meltdata.priority.arrival$variable,meltdata.priority.arrival$YearArrivalCategory),3))
+castdata.priority.arrival$Var1 <-factor(castdata.priority.arrival$Var1, levels=castdata.priority[order(castdata.priority1$Freq), "Var1"])
+
+## Recoding and ordering priorities
+castdata.priority.arrival$Var2 <- as.character(castdata.priority.arrival$Var2)
+castdata.priority.arrival$Var2[castdata.priority.arrival$Var2=="grouppriority.third"] <- "Third priority"
+castdata.priority.arrival$Var2[castdata.priority.arrival$Var2=="grouppriority.second"] <- "Second priority"
+castdata.priority.arrival$Var2[castdata.priority.arrival$Var2=="grouppriority.first"] <- "First priority"
+
+castdata.priority.arrival$Var2 <-factor(castdata.priority.arrival$Var2, levels=c("Third priority","Second priority","First priority"))
+
+
+goingback.priority.arrival  <-  ggplot(castdata.priority.arrival, aes(x = Var1, fill=Var2, y=Freq)) +
+  geom_bar( stat = "identity" , colour="#2a87c8") +
+  coord_flip() +
+  facet_wrap(~ Var3, ncol=3) + 
+  guides(fill = guide_legend(reverse=TRUE)) +
+  ylab("") +
+  xlab("") +
+  ggtitle("Main issues that needs to be improved on in Syria for people to return") +
+  labs(fill="")+
+  scale_y_continuous(labels=percent)+
+  scale_fill_brewer(palette = "PuOR") + 
+  theme(plot.title = element_text(size=12, hjust = 0.8)) +  #, hjust=0.5
+  ##theme(axis.text.y = element_text(hjust=0)) +
+  #theme(axis.text.y=element_blank())+
+  theme(legend.position="top", legend.direction="horizontal") 
+goingback.priority.arrival 
 
 ```
 
@@ -2029,6 +2167,7 @@ plotfreq <- ggplot(data1, aes(data1[ , i])) +
 plotfreq
 
 ```
+
 
 
 

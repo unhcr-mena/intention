@@ -1,7 +1,10 @@
 rm(list = ls())
 ################################################################
 ## Load all required packages
-source("code/0-packages.R")
+mainDir <- getwd()
+source(paste0(mainDir,"/code/0-packages.R"))
+
+#source("code/0-packages.R")
 library(koboloadeR)
 
 ## kobo_projectinit()
@@ -106,3 +109,6 @@ for (i in 1:133){
   #levels(as.factor(data$group_intro.goingback))
 }
 
+rm(dataall, data.available, data.available2, data.notavailable, data.notavailable2, data.sample, data.sample1, samplefull, i, mainDir)
+
+write.csv(data,"data/datafinal.csv", row.names = FALSE)
