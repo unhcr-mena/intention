@@ -194,6 +194,11 @@ data.svy.rake.trim <- trimWeights(data.svy.rake.ctr.coo,
                                   strict = TRUE)
 
 proportion.trim <- svyby(  ~ group_intro.goingback,  by =  ~ ctr+COO_L1,  design = data.svy.rake.trim,  FUN = svymean)
+
+# names(data)
+proportion.trim.when <- svyby(  ~ group_intro.returnwhen,  by =  ~ ctr+COO_L1,  design = data.svy.rake.trim,  FUN = svymean)
+
+
 #names(proportion.trim)
 proportion.trim$key <- paste(proportion.trim$ctr,proportion.trim$COO_L1,sep="-")
 
@@ -202,6 +207,9 @@ universe.cool1.ctr <-  as.data.frame(table(universe$COO_L1,universe$ctr))
 universe.cool1.ctr$key <- paste(universe.cool1.ctr$Var2,universe.cool1.ctr$Var1,sep="-")
 
 estimation <- join(x=universe.cool1.ctr, y=proportion.trim, by="key",type="left")
+names(estimation)
+estimation$numyes <- estimation$Freq * estimation$group_intro.goingbackYes
+estimation$se.numyes <- estimation$Freq * estimation$se.group_intro.goingbackYes
 
 ###################################################################
 ### Apply a series of function from Survey package
