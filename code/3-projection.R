@@ -2,11 +2,13 @@
 
 ###  Step 1: Weight the dataset -
 
+# country of asylum
+# area of origin
+source("code/post-stratify.R")
 
-## Step2: use weighted intention to return by:
+## Step2: get weighted intention to return by:
 
-# country
-# case size, 
+# country of asylum
 # area of origin
 # when
 # yes /maybe
@@ -15,7 +17,6 @@
 ## Step3: get proportion within original population
 
 ## country 
-# case size, 
 # area of origin
 
 ## Step 4: apply proportion
