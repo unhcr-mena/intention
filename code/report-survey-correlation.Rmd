@@ -1,0 +1,448 @@
+---
+title: "Survey on return intention & perception of Syrian Refugees in Egypt, Iraq and Jordan \n Preliminary exploration of results - draft not for distribution - "
+author: "Prepared by UNHCR DOiA"
+date: "Amman, `r Sys.Date()`"
+output: 
+  word_document: 
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+    toc: yes
+    toc_depth: 2
+    reference_docx: style-unhcr-portrait.docx
+    
+---
+
+```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
+setwd("D:/R-project/intention")
+source("code/1-loaddata.R")
+library("gplots")
+
+library("corrplot")
+library("graphics")
+# install.packages("vcd")
+library("vcd")
+
+
+
+```
+
+
+
+# Analysis of Correlation
+
+## Governorate of Origin
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+library("corrplot")
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$COO_L1)
+
+
+
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Case Size
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$size)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Country Asylum
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$CountryAsylum)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Year Arrival
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$YearArrivalCategory)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Female ratio
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$female.ratio)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Dependency
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$dependency)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Ethnicity
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$dem_ethnCat)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occupation
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$occupationcat)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Marrital Status
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$dem_marriagecat)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+
+## Average Age
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+data$AVG_Age1 <- cut(as.integer(data$AVG_Age),5)
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$AVG_Age1)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+
+## Occurence of needs
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$needs)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+
+## Occurence in the household of person At.Risk
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$At.Risk <- as.character(data$At.Risk)
+data$At.Risk[is.na(data$At.Risk)] <- "No"
+chisq <- chisq.test(data$group_intro.goingback, as.factor(data$At.Risk))
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE, main="Occurence in the household of person At.Risk")
+```
+
+## Occurence in the household of person Child.Labour
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Child.Labour <- as.character(data$Child.Labour)
+data$Child.Labour[is.na(data$Child.Labour)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Child.Labour)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Child.marriage..parent.or.pregnancy
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Child.marriage..parent.or.pregnancy <- as.character(data$Child.marriage..parent.or.pregnancy)
+data$Child.marriage..parent.or.pregnancy[is.na(data$Child.marriage..parent.or.pregnancy)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Child.marriage..parent.or.pregnancy)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Family.Needs
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Family.Needs <- as.character(data$Family.Needs)
+data$Family.Needs[is.na(data$Family.Needs)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Family.Needs)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+
+## Occurence in the household of person Medical
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Medical <- as.character(data$Medical)
+data$Medical[is.na(data$Medical)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Medical)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Need.of.Care
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Need.of.Care <- as.character(data$Need.of.Care)
+data$Need.of.Care[is.na(data$Need.of.Care)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Need.of.Care)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Problem.with.violence.law.recruitment
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Problem.with.violence.law.recruitment <- as.character(data$Problem.with.violence.law.recruitment)
+data$Problem.with.violence.law.recruitment[is.na(data$Problem.with.violence.law.recruitment)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Problem.with.violence.law.recruitment)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Separated.Child
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Separated.Child <- as.character(data$Separated.Child)
+data$Separated.Child[is.na(data$Separated.Child)] <- "No"
+
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Separated.Child)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Single.Parent
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Single.Parent <- as.character(data$Single.Parent)
+data$Single.Parent[is.na(data$Single.Parent)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Single.Parent)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Unaccompanied
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Unaccompanied <- as.character(data$Unaccompanied)
+data$Unaccompanied[is.na(data$Unaccompanied)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Unaccompanied)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Victim.of.Violence
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Victim.of.Violence <- as.character(data$Victim.of.Violence)
+data$Victim.of.Violence[is.na(data$Victim.of.Violence)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Victim.of.Violence)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+## Occurence in the household of person Woman.at.Risk
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+data$Woman.at.Risk <- as.character(data$Woman.at.Risk)
+data$Woman.at.Risk[is.na(data$Woman.at.Risk)] <- "No"
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.goingback, data$Woman.at.Risk)
+if(chisq$p.value > 0.05){
+  cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e greater than the .05 significance level), therefore the variables are independent.\n"))
+} else{
+    cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".",  big.mark=",", scientific=FALSE)," (i.e smaller than the .05 significance level), therefore the variables are dependent.\n"))}
+#chisq
+
+cat("The graph below displays the level of correlation between variables modalities (blue positively associate, red negatively associated, the bigger the dot, the higher the correlation).\n")
+corrplot(chisq$residuals, is.cor = FALSE)
+
+```
+
