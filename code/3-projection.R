@@ -16,7 +16,7 @@ source("code/post-stratify.R")
 
 ## Step3: get proportion within original population
 
-## country 
+## country
 # area of origin
 
 ## Step 4: apply proportion
@@ -24,9 +24,9 @@ source("code/post-stratify.R")
 
 
 ### analysis of correlation
-install.packages("corrplot")
-source("code/rquery_cormat.r")
-install.packages("gplots")
+#install.packages("corrplot")
+#source("code/rquery_cormat.r")
+#install.packages("gplots")
 library("gplots")
 
 library("corrplot")
@@ -58,7 +58,7 @@ mosaicplot(dt, shade = TRUE, las=2, main = "Mosaic")
 
 my.list.chisq <- lapply(c("COO_L1","size","CountryAsylum"),function(var)chisq.test(data$group_intro.goingback, data[,var]))
 
-my.list.logi <- lapply(c("COO_L1","size","CountryAsylum"),         
+my.list.logi <- lapply(c("COO_L1","size","CountryAsylum"),
                   function(var) {
                     formula    <- as.formula(paste("group_intro.goingback ~", var))
                     res.logist <- glm(formula, data = data, family = binomial)
@@ -67,6 +67,9 @@ my.list.logi <- lapply(c("COO_L1","size","CountryAsylum"),
 
 str(data$AVG_Age)
 data$AVG_Age1 <- cut(as.integer(data$AVG_Age),5)
+
+
+#### Check correlation with decision to return
 ############################################################
 
 ## chech chi sq test
@@ -75,14 +78,15 @@ chisq$p.value
 corrplot(chisq$residuals, is.cor = FALSE)
 
 ## chech chi sq test
-chisq <- chisq.test(data$group_intro.goingback, data$size)
+chisq <- chisq.test(data$group_intro.goingback, data$CountryAsylum)
 chisq
 corrplot(chisq$residuals, is.cor = FALSE)
 
 ## chech chi sq test
-chisq <- chisq.test(data$group_intro.goingback, data$CountryAsylum)
+chisq <- chisq.test(data$group_intro.goingback, data$size)
 chisq
 corrplot(chisq$residuals, is.cor = FALSE)
+
 
 ## chech chi sq test
 chisq <- chisq.test(data$group_intro.goingback, data$YearArrivalCategory)
@@ -214,7 +218,46 @@ corrplot(chisq$residuals, is.cor = FALSE)
 
 
 
-##### testing logistic regression 
+
+#####
+#### Check correlation with return when
+############################################################
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.returnwhen, data$COO_L1)
+chisq$p.value
+corrplot(chisq$residuals, is.cor = FALSE)
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.returnwhen, data$CountryAsylum)
+chisq
+corrplot(chisq$residuals, is.cor = FALSE)
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.returnwhen, data$size)
+chisq
+corrplot(chisq$residuals, is.cor = FALSE)
+
+
+## chech chi sq test
+str(data$YearArrival)
+chisq <- chisq.test(data$group_intro.returnwhen, data$YearArrival)
+chisq
+corrplot(chisq$residuals, is.cor = FALSE)
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.returnwhen, data$female.ratio)
+chisq
+corrplot(chisq$residuals, is.cor = FALSE)
+
+## chech chi sq test
+chisq <- chisq.test(data$group_intro.returnwhen, data$dependency)
+chisq
+corrplot(chisq$residuals, is.cor = FALSE)
+
+
+
+##### testing logistic regression
 
 
 log.reason

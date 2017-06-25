@@ -1,0 +1,884 @@
+---
+title: "Projection of potential magnitude of return for Syrian Refugees in Egypt, Iraq and Jordan "
+author: "Prepared by UNHCR MENA Protection Services - Draft Document"
+date: "Amman, `r format(Sys.Date(),  '%d %B %Y')`"
+output: 
+  word_document: 
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+    toc: yes
+    toc_depth: 2
+    reference_docx: style-unhcr-portrait.docx
+ 
+---
+
+```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
+
+
+mainDir <- getwd()
+mainDir2 <- substring(mainDir, 0 , nchar(mainDir)-5)
+source(paste0(mainDir2,"/code/0-packages.R"))
+
+library(readr)
+data <- read_csv(paste0(mainDir2,"/data/datafinal.csv"))
+form <- "form.xls"
+dico <- read.csv(paste(mainDir2,"/data/dico_",form,".csv",sep=""), encoding="UTF-8", na.strings="")
+
+
+data <- kobo_label(data, dico)
+
+data <- as.data.frame(data)
+## it seems that all factors are disorganised
+for (i in 1:ncol(data)){
+ # i <- 1
+ if ( class(data[ , i])=="factor"){
+ data[ , i] <- as.character(data[ , i])
+ data[ , i] <- as.factor(data[ , i])
+ levels(as.factor(data$group_intro.goingback))
+ } else {}
+}
+
+library("ggplot2")
+library("ggthemes")
+library("rmarkdown")
+library("xtable")
+library("knitr")
+library("pander") ## library to format regression output in Rmd
+library("readxl")
+library("gplots")
+
+library("corrplot")
+library("graphics")
+# install.packages("vcd")
+library("vcd")
+library("survey")
+######################################################################
+## Option 1 - use weight from the original sampling plan
+## Abanadonned because of low response rate
+#str(data$Prob)
+data$Prob <- as.numeric(data$Prob)
+data$Stratum2 <- paste(data$Stratum, data$ctr)
+#levels(as.factor(data$Stratum2))
+
+## loading data universe to recompute weight
+progrescase <- read.csv(paste(mainDir2,"/data/progrescase-1.csv", sep=""))
+
+universe <- progrescase[progrescase$CountryAsylum %in% c("ARE", "IRQ", "JOR"), ]
+N <- nrow(universe)
+n <- nrow(data)
+
+## building the survey object
+survey.data = svydesign(
+ ids = ~ 1,
+ strata = data$Stratum2,
+ weights = data$Prob,
+ fpc = rep(N, n),
+ data = data
+)
+
+universe$ctr <- as.character(universe$CountryAsylum)
+universe$ctr[universe$ctr == "ARE"] <- "Egypt"
+universe$ctr[universe$ctr == "JOR"] <- "Jordan"
+universe$ctr[universe$ctr == "IRQ"] <- "Iraq"
+
+universe.ctr <- as.data.frame(table(universe$ctr))
+names(universe.ctr)[1] <- "ctr"
+ctr <- levels(as.factor(data$ctr))
+
+## Now Area of Origin
+# We need first to recategorise Cool1
+data$key <- paste(data$ctr,data$COO_L1,sep="-")
+
+universe$key <- paste(universe$ctr,universe$cool1,sep="-")
+#levels(as.factor(universe$key))
+#levels(as.factor(data$key))
+cool1cat <- levels(as.factor(data$key))
+universe$COO_L1 <- as.character(universe$cool1)
+universe$COO_L1[!(universe$key %in% cool1cat)] <- "Other"
+
+
+### Add Case size stata
+data$Case.size2 <- data$size
+#levels(as.factor(data$Case.size2))
+#prop.table(table(data$Case.size, useNA = "ifany"))
+#check <- data[is.na(data$Case.size2),]
+
+data$Case.size <- car::recode(data$Case.size2,"'Case.size.1'='Case.size.1';
+ 'Case.size.2'='Case.size.2';
+ 'Case.size.3'='Case.size.3.to.5';
+ 'Case.size.4'='Case.size.3.to.5';
+ 'Case.size.5'='Case.size.3.to.5';
+ 'Case.size.over.5'='Case.size.6.and.more';
+ 'Case.size.over.5'='Case.size.6.and.more'")
+universe$Case.size2 <- universe$Case.size
+universe$Case.size <- car::recode(universe$Case.size,"'Case.size.1'='Case.size.1';
+ 'Case.size.2'='Case.size.2';
+ 'Case.size.3'='Case.size.3.to.5';
+ 'Case.size.4'='Case.size.3.to.5';
+ 'Case.size.5'='Case.size.3.to.5';
+ 'Case.size.6'='Case.size.6.and.more';
+ 'Case.size.7.and.more'='Case.size.6.and.more'")
+
+
+data$key2 <- paste(data$ctr,data$COO_L1,data$Case.size,sep="-")
+universe$key2 <- paste(universe$ctr,universe$COO_L1,universe$Case.size,sep="-")
+
+
+universe.key2 <- as.data.frame(table(universe$key2))
+names(universe.key2)[1] <- "key2"
+
+##############################################################################
+## create the unweighted survey object
+data.svy.unweighted <- svydesign(ids = ~ 1,
+ data = data)
+
+### Weighted
+frame1 <- as.data.frame( svyby(
+ ~ group_intro.goingback,
+ by = ~ ctr,
+ design = data.svy.unweighted,
+ FUN = svymean
+))
+
+#names(frame1)
+frame1 <- frame1[ , c("ctr" , "group_intro.goingbackUndecided" , "group_intro.goingbackYes")] 
+
+frame1$group_intro.goingbackUndecided <- paste(round(frame1$group_intro.goingbackUndecided * 100 ,digits=2),"%",sep="")
+frame1$group_intro.goingbackYes <- paste(round(frame1$group_intro.goingbackYes * 100 ,digits=2),"%",sep="")
+row.names(frame1) <- NULL
+names(frame1)[1] <- "Country"
+names(frame1)[2] <- "Undecided to return within the next year"
+names(frame1)[3] <- "Decied to return within the next year"
+############################################################################
+## Try post stratification on ctr, area of Origin & case size
+data.svy.rake.ctr.coo.size <- rake(
+ design = data.svy.unweighted,
+ sample.margins = list( ~ key2),
+ population.margins = list(universe.key2)
+)
+
+## Trim weight to prevent overrepresentation of some records
+data.svy.rake.trim2 <- trimWeights(data.svy.rake.ctr.coo.size,
+ lower = 0.3,
+ upper = 3,
+ strict = TRUE)
+
+
+
+
+proportion.trim2 <- svyby( ~ group_intro.goingback, by = ~ ctr+COO_L1+Case.size, design = data.svy.rake.trim2, FUN = svymean)
+
+#names(proportion.trim)
+proportion.trim2$key2 <- paste(proportion.trim2$ctr,proportion.trim2$COO_L1,proportion.trim2$Case.size,sep="-")
+
+## Create estimation
+#cat("Create estimation based on Asylum, Origin & Case size\n")
+universe.cool1.ctr.size <- as.data.frame(table(universe$key2))
+names(universe.cool1.ctr.size)[1]<-"key2"
+
+rm(estimation2)
+estimation2 <- join(x=universe.cool1.ctr.size, y=proportion.trim2, by="key2",type="left")
+
+estimation2$numyes <- estimation2$Freq * estimation2$group_intro.goingbackYes
+estimation2$numUndecided <- estimation2$Freq * estimation2$group_intro.goingbackUndecided
+
+estimation2$num <- as.integer(1)
+estimation2$num[estimation2$Case.size=="Case.size.1"] <- 1
+estimation2$num[estimation2$Case.size=="Case.size.2"] <- 2
+estimation2$num[estimation2$Case.size=="Case.size.3.to.5"] <- 4
+estimation2$num[estimation2$Case.size=="Case.size.6.and.more"] <- 7
+
+estimation2$numyesind <- estimation2$numyes * estimation2$num
+estimation2$numUndecidedind <- estimation2$numUndecided * estimation2$num
+
+#estimation2$numyesind[estimation2$Case.size=="Case.size.2"] <- estimation2$numyes * 2
+#estimation2$numUndecidedind[estimation2$Case.size=="Case.size.2"] <- estimation2$numUndecided * 2
+
+#estimation2$numyesind[estimation2$Case.size=="Case.size.3.to.5"] <- estimation2$numyes * 4
+#estimation2$numUndecidedind[estimation2$Case.size=="Case.size.3.to.5"] <- estimation2$numUndecided * 4
+
+#estimation2$numyesind[estimation2$Case.size=="Case.size.6.and.more"] <- estimation2$numyes * 7
+#estimation2$numUndecidedind[estimation2$Case.size=="Case.size.6.and.more"] <- estimation2$numUndecided * 7
+
+## write.csv(estimation2, paste(mainDir2,"/out/estimation2.csv", sep=""))
+
+### Aggregate info
+#names(estimation2)
+estimation2.less <- estimation2[ ,c( "ctr" , "COO_L1","Case.size", "Freq", "numyes","numyesind", "numUndecided" , "numUndecidedind" )]
+
+## write.csv(estimation2.less, paste(mainDir2,"/out/estimation2less.csv", sep=""))
+
+estimation3.less <- estimation2[ ,c( "COO_L1","numyes", "numyesind" )]
+estimation3.less[] <- lapply(estimation3.less, function(x) type.convert(as.character(x)))
+estimation3.coo <-aggregate(. ~ COO_L1, estimation3.less, sum)
+estimation3.coo$avg <-  estimation3.coo$numyesind / estimation3.coo$numyes
+estimation3.coo$numyesind <- format(estimation3.coo$numyesind, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+estimation3.coo$numyes <- format(estimation3.coo$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+estimation3.coo$avg <- format(estimation3.coo$avg, digits=2, decimal.mark=".", big.mark=",",scientific=FALSE)
+names(estimation3.coo)[1] <- "Area of Origin"
+names(estimation3.coo)[2] <- "# of cases with intention to return"
+names(estimation3.coo)[3] <- "# of individuals with intention to return"
+names(estimation3.coo)[4] <- "Average case size"
+
+estimation4.less <- estimation2[ ,c( "ctr","numyes", "numyesind" )]
+estimation4.less[] <- lapply(estimation4.less, function(x) type.convert(as.character(x)))
+estimation4.ctr <-aggregate(. ~ ctr, estimation4.less, sum)
+estimation4.ctr$avg <-  estimation4.ctr$numyesind / estimation4.ctr$numyes
+estimation4.ctr$numyesind <- format(estimation4.ctr$numyesind, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+estimation4.ctr$numyes <- format(estimation4.ctr$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+estimation4.ctr$avg <- format(estimation4.ctr$avg, digits=2, decimal.mark=".", big.mark=",",scientific=FALSE)
+names(estimation4.ctr)[1] <- "Country of Asylum"
+names(estimation4.ctr)[2] <- "# of cases with intention to return"
+names(estimation4.ctr)[3] <- "# of individuals with intention to return"
+names(estimation4.ctr)[4] <- "Average case size"
+
+
+### Weighted
+#frame2 <- as.data.frame( svyby( ~ group_intro.goingback, by = ~ key2+ctr, design = data.svy.rake.trim2, FUN = svymean))
+
+estimation5.less <- estimation2[ ,c( "ctr","numyes", "numyesind","numUndecided", "numUndecidedind" )]
+estimation5.less[] <- lapply(estimation5.less, function(x) type.convert(as.character(x)))
+estimation5.ctr <-aggregate(. ~ ctr, estimation5.less, sum)
+
+estimation5.ctr <- merge(estimation5.ctr, universe.ctr)
+
+#names(estimation5.ctr)
+estimation5.ctr$Country <- estimation5.ctr$ctr
+estimation5.ctr$Undecided <- estimation5.ctr$numUndecided / estimation5.ctr$Freq
+estimation5.ctr$Yes.to.return <- estimation5.ctr$numyes / estimation5.ctr$Freq
+
+sumundecided <- round(sum(estimation5.ctr$numUndecided),digits=2)
+sumyes <- round(sum(estimation5.ctr$numyes),digits=2)
+
+
+frame2 <- estimation5.ctr[ , c("Country", "Undecided",  "Yes.to.return")] 
+
+frame2$Undecided <- paste(round(frame2$Undecided * 100 ,digits=2),"%",sep="")
+frame2$Yes.to.return <- paste(round(frame2$Yes.to.return * 100 ,digits=2),"%",sep="")
+
+
+
+names(frame2)[1] <- "Country"
+names(frame2)[2] <- "Undecided to return within the next year"
+names(frame2)[3] <- "Decided to return within the next year"
+
+
+#format(estimation4.ctr$, digits=2, decimal.mark=".", big.mark=",", scientific=FALSE)
+
+
+###########################################################################
+## Now lookingat comparison with spontaneous departure
+## loading data universe to recompute weight
+progresall <- read.csv(paste(mainDir2,"/data/progresall.csv", sep=""))
+
+#proportion <- as.data.frame(prop.table(table(progresall$return, as.factor(progresall$cool1Cat), progresall$CountryAsylum, useNA = "ifany"),3))
+
+#proportion <- as.data.frame(table(progresall$return, as.factor(progresall$cool1Cat), progresall$CountryAsylum, useNA = "ifany"))
+
+#tabular( (CountryAsylum +cool1Cat) ~ Format(digits=2) * (return  ) * (length),  data=progresall)
+
+#names(progresall)
+progresall$ctr[progresall$CountryAsylum == "ARE"] <- "Egypt"
+progresall$ctr[progresall$CountryAsylum == "JOR"] <- "Jordan"
+progresall$ctr[progresall$CountryAsylum == "IRQ"] <- "Iraq"
+
+progresall$key <- paste(progresall$ctr,progresall$cool1Cat,sep="-")
+
+## clean small modalities
+
+progresall$cool1Cat1 <- as.character(progresall$cool1Cat)
+progresall$cool1Cat1[!(progresall$key %in% cool1cat)] <- "Other"
+
+
+progresall$key1 <- paste(progresall$ctr,progresall$cool1Cat1,sep="-")
+
+progres.count <- as.data.frame(table(progresall$key1, progresall$return))
+progres.count2 <- dcast(progres.count, Var1 ~ Var2,fun.aggregate = sum, na.rm = TRUE, value.var="Freq")
+names(progres.count2)[1] <- "key1"
+
+
+#ames(estimation2)
+estimation2$key1 <- paste(estimation2$ctr,estimation2$COO_L1,sep="-")
+estimation6.less <- estimation2[ ,c( "key1","numyes", "numUndecided" )]
+estimation6.less[] <- lapply(estimation6.less, function(x) type.convert(as.character(x)))
+estimation6.key1 <-aggregate(. ~ key1, estimation6.less, sum)
+
+progres.count3 <- merge(x=progres.count2, y=estimation6.key1, by="key1", all.x=TRUE)
+# names(progres.count3)
+progres.count4 <- progres.count3[ ,c("key1", "Stayed",  "Departed",  "numyes", "numUndecided")]
+
+progres.count4$var  <- paste(round((progres.count4$numyes/progres.count4$Departed) * 100 ,digits=2),"%",sep="")  
+progres.count4$numyes <- format(progres.count4$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+progres.count4$numUndecided <- format(progres.count4$numUndecided, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+progres.count4$Stayed <- format(progres.count4$Stayed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+progres.count4$Departed <- format(progres.count4$Departed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+
+names(progres.count4)[1] <- " Asylum & Area of Origin"
+names(progres.count4)[2] <- "# of registered cases"
+names(progres.count4)[3] <- "# of spontaneous return cases 2016-17"
+names(progres.count4)[4] <- "# of cases with intention to return"
+names(progres.count4)[5] <- "# of cases undecided to return"
+names(progres.count4)[6] <- "Variation"
+
+```
+
+# Executive summary
+
+
+Based on the intention survey performed in Egypt, Iraq and Jordan, it is possible to extrapolate results in order to assess potential numbers of return to Syria. The analytical approach is based on the following steps:
+
+1.	The relation between intention to return (yes or undecided) and different variables that can describe the characteristics of case allow to understand the variables that, in terms of probability, are strongly dependent, moderately dependent and independent:  
+    *	The variable strongly dependent to the intention to return are __Country of Asylum__, __Area of Origin__, __Ethnicity__ and __Occupation__;
+    *	The variables moderately dependent to the intention to return are __Case Size__, & 
+    *	The variables independent to the intention to return are __Marital Status of the household representative__, __Female ratio__, __Age Dependency__, __Average age within household__ and __Occurrence of specific Needs__.
+ 
+<br >   
+
+2.	To refine the accuracy of the projections and limit sampling biais, the __Country of Asylum__, __Area of Origin__ and __Case Size__ variables were then used to define the relative percentage of population segment (Country of Asylum, Area of Origin and Case Size) per intention (yes or undecided) (i.e. post-stratify the sample by computing weight for each record within the sample). Case Size is an important variable to consider in order to calculate projected number of individuals. This percentage can be then applied to the population numbers within each population segment to get the researched estimation. This represents an estimation of __`r  sumyes `__ cases who potentially intends to return and another __`r  sumundecided `__ caes who are potentially undecided to return.
+
+<br >
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
+#cat()
+kable(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (3, bold = T)
+
+
+#print(pandoc.table(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum", rownames = NULL, split.table = 300, split.cells = c("100%"),   use.hyphening = TRUE, justify = 'left'))
+
+#pandoc.table(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum", style = "rmarkdown", split.table = 300,  justify = 'left')
+
+```
+<br >
+```{r , echo=FALSE,  warning=FALSE, message=FALSE,  comment = "", tidy = TRUE, fig.height=4, size="small"}
+#cat()
+#cat()
+kable(estimation3.coo, caption="__Table__:Estimation of individuals per Area of Origin") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")
+#pandoc.table(estimation3.coo, caption="__Table__:Estimation of individuals per Country of Asylum", rownames = NULL, split.table = 300, split.cells = c("100%"),   use.hyphening = TRUE, justify = 'left')
+#print(pandoc.table(estimation3.coo, caption="__Table__:Estimation of individuals per Country of Asylum", style = "rmarkdown", split.table = 300,  justify = 'left'))
+```
+
+
+<br >
+3.	The analysis of projected intention to return has been then compared with the recorded spontaneous departure in 2016 & 2017 for Syrian Refugees in Egypt, Iraq & Lebanon for the same population segment. The observed proportion for the same population segments than described above are the following.
+
+<br >
+
+4.	The same analysis of variable correlations is confirming the strong dependence with  __Country of Asylum __,  __Area of Origin __ and  __Case Size __.
+
+
+\pagebreak 
+
+# Introduction
+
+This report is the second part of the exploration of the intention survey. The objective is to analyze correlations between variables, to build projection and to compare declared intention with observed spontaneous departure.
+
+
+
+# Analysis of Correlation
+
+The analysis of correlation is done using a statistical test (called [Chi-squared](https://en.wikipedia.org/wiki/Chi-squared_test)). This test is used to determine if there is a significant relationship between two nominal categorical variables: It is used to evaluate the probability for two variables to be dependent from each other and it allows to visualise the details of the correlation between each modality of the variables.
+
+The graphs below display the level of correlation between variables modalities (blue = positively associate, red = negatively associated, the bigger the dot = the higher the correlation).
+
+## Variables strongly dependent to intention to return
+
+
+### Country Asylum
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+library("corrplot")
+chisq <- chisq.test(data$CountryAsylum, data$group_intro.goingback)
+if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+### Area of Origin
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+library("corrplot")
+## chech chi sq test
+chisq <- chisq.test(data$COO_L1, data$group_intro.goingback)
+
+#str(data$group_intro.goingback)
+#str(data$COO_L1)
+
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+
+### Ethnicity
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+chisq <- chisq.test(data$dem_ethnCat, data$group_intro.goingback)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Occupation
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$occupationcat, data$group_intro.goingback)
+
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+## Variables moderately dependent to intention to return
+
+### Case Size
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$size, data$group_intro.goingback)
+
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Year of Arrival
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+chisq <- chisq.test( as.factor(data$YearArrivalCategory), data$group_intro.goingback)
+
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+## Variables independent to intention to return
+
+### Female ratio
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$female.ratio, data$group_intro.goingback)
+
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Dependency
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test( data$dependency, data$group_intro.goingback)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+
+
+### Marital Status of principal applicant
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$dem_marriagecat, data$group_intro.goingback)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+### Average Age within household
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+data$AVG_Age1 <- cut(as.integer(data$AVG_Age),5)
+
+## chech chi sq test
+chisq <- chisq.test(data$AVG_Age1, data$group_intro.goingback)
+
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+### Occurrence of specific needs within the household
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(data$needs, data$group_intro.goingback)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+
+
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+
+\pagebreak 
+
+# Projections of return
+
+## Comparison between raw and weighted data
+
+The raw results of the survey gaves the following rates for each intention per country.
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE,  cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+
+#print(pandoc.table(compare.weight, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+
+#kable(compare.weight)
+#cat()
+kable(frame1, caption="__Table__:Percentage before weighting") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (1, bold = T)
+```
+
+<br >
+
+Based on previous analysis of variable dependencies and on the importance of the variable to compute projection, the sample dataset has been post-stratified based on the relative frequencies of the following variables with in the total registered cases:
+
+ * Country of asylum
+ * Area of origin
+ * Case size
+
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE,  cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+
+#cat()
+kable(frame2, caption="__Table__:Percentage after weighting") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (1, bold = T)
+
+```
+
+## Figures projection
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+#print(pandoc.table(estimation2.less, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+
+#print(pandoc.table(estimation2.coo, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+
+kable(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (3, bold = T)
+
+```
+
+<br >
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
+#cat()
+#
+#kable(estimation4.ctr,caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+#kable_styling (latex_options = "striped", position = "center") %>%
+#add_footnote ( c("Figures presented here are estimation"), notation = "number") %>%
+#column_spec (3, bold = T)
+
+#cat()
+kable(estimation3.coo, caption="__Table__:Estimation of individuals per Area of Origin") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (3, bold = T)
+#kable_styling (latex_options = "striped", position = "center") %>%
+#add_footnote ( c("Figures presented here are estimation"), notation = "number") %>%
+#column_spec (3, bold = T)
+
+```
+
+
+\pagebreak 
+
+# Comparison between observed sponteanous departure & intention to return
+
+The following analysis compare the profile of the case engaged in spontenaous departure in 2016 & 20017 in comparison with the profiles of the cases who remained in the country of asylum. 
+
+The objective is to see whether we observe the same proportion and the same patterns of correlation.
+
+
+## Comparison between departure in 2016/2017 and intention in the next year
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+
+#print(pandoc.table(proportion, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+kable(progres.count4, caption="__Table__:Proportion of spontaneous departure") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+column_spec (3, bold = T)
+```
+
+
+## Analysis of correlations for spontaneous departure
+
+### Spontaneous return Vs Area of Origin
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+##### Now checking correlation to see if we similar one
+
+library("corrplot")
+#levels(as.factor(progresall$return))
+#prop.table(table(progresall$return, useNA = "ifany"))
+#levels(as.factor(progresall$cool1Cat))
+#prop.table(table(progresall$cool1Cat, useNA = "ifany"))
+
+chisq <- chisq.test(as.factor(progresall$cool1Cat),progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Spontaneous return Vs Country of Asylum
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(progresall$ctr, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Spontaneous return Vs Case Size
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(progresall$Case.size, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Spontaneous return Vs Year of Arrival
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+#str(progresall$YearArrivalCategory)
+chisq <- chisq.test(progresall$YearArrivalCategory, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+```
+
+
+### Spontaneous return Vs Ethnicity
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+#str(progresall$YearArrivalCategory)
+chisq <- chisq.test(progresall$dem_ethnCat, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+```
+
+### Spontaneous return Vs Occupation
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+## chech chi sq test
+#str(progresall$YearArrivalCategory)
+chisq <- chisq.test(progresall$occupationcat, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+```
+
+
+
+### Spontaneous return Vs Female Ratio
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(progresall$female.ratio, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+```
+
+### Spontaneous return Vs Dependency
+
+```{r , echo=FALSE, warning=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+## chech chi sq test
+chisq <- chisq.test(progresall$dependency, progresall$return)
+## check chi sq test
+ if(chisq$p.value > 0.075){
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. largely greater than the .05 significance level), therefore the variables are independent.\n"))
+} else if (chisq$p.value < 0.075 & chisq$p.value > 0.05) {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e slightly greater than the .05 significance level), therefore the variables are moderately dependent.\n"))} else {
+ cat(paste("According to the Pearson's Chi-squared test, the p-value is",format(chisq$p.value, digits=3, decimal.mark=".", big.mark=",", scientific=FALSE)," (i.e. smaller than the .05 significance level), therefore the variables are strongly dependent.\n"))}
+#chisq
+corrplot(chisq$residuals, is.cor = FALSE, cl.pos="n")
+rm(chisq)
+
+```
+
+### Predicting return based on departure
+
+```{r, echo=FALSE, warning=FALSE}
+
+# Calculation of sample size depending on base
+## test Regression
+#names(progresall)
+
+progres.reg <- progresall[ , c("return", "CountryAsylum" , "Case.size" ,  "YearArrivalCategory",
+ "female.ratio" , "dependency" , "dem_ethnCat", "occupationcat", "cool1Cat1" )]
+model <- glm(return ~.,family=binomial(link='logit'),data=progres.reg )
+
+#summary(model)
+# Showing model
+# 
+pander(summary(model), missing="")
+
+# Analysis of deviance
+pander(anova(model,test="Chisq"))
+
+# McFadden R^2
+pander(pR2(model),caption="McFadden R^2")
+
+```
