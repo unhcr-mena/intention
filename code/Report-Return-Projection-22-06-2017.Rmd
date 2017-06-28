@@ -1,7 +1,7 @@
 ---
 title: "Projection of potential magnitude of return for Syrian Refugees in Egypt, Iraq and Jordan "
-author: "Prepared by UNHCR MENA Protection Services - Draft Document"
-date: "Amman, `r format(Sys.Date(),  '%d %B %Y')`"
+author: "UNHCR MENA Protection Services - Draft Document"
+date: "Amman, prepared on the `r format(Sys.Date(),  '%d %B %Y')`"
 output: 
   word_document: 
     fig_caption: yes
@@ -13,7 +13,7 @@ output:
  
 ---
 
-```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=FALSE}
+```{r setup, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE, cache=TRUE}
 
 
 mainDir <- getwd()
@@ -149,7 +149,7 @@ frame1$group_intro.goingbackYes <- paste(round(frame1$group_intro.goingbackYes *
 row.names(frame1) <- NULL
 names(frame1)[1] <- "Country"
 names(frame1)[2] <- "Undecided to return within the next year"
-names(frame1)[3] <- "Decied to return within the next year"
+names(frame1)[3] <- "Decided to return within the next year"
 ############################################################################
 ## Try post stratification on ctr, area of Origin & case size
 data.svy.rake.ctr.coo.size <- rake(
@@ -210,28 +210,36 @@ estimation2.less <- estimation2[ ,c( "ctr" , "COO_L1","Case.size", "Freq", "numy
 ## write.csv(estimation2.less, paste(mainDir2,"/out/estimation2less.csv", sep=""))
 
 estimation3.less <- estimation2[ ,c( "COO_L1","numyes", "numyesind" )]
-estimation3.less[] <- lapply(estimation3.less, function(x) type.convert(as.character(x)))
-estimation3.coo <-aggregate(. ~ COO_L1, estimation3.less, sum)
+#estimation3.less[] <- lapply(estimation3.less, function(x) type.convert(as.character(x)))
+estimation3.coo <- aggregate(. ~ COO_L1, estimation3.less, sum)
+#estimation3.coo2 <- aggregate(estimation3.less[,c("numyes", "numyesind")], by=list(estimation3.less$COO_L1), "sum")
+
 estimation3.coo$avg <-  estimation3.coo$numyesind / estimation3.coo$numyes
 estimation3.coo$numyesind <- format(estimation3.coo$numyesind, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 estimation3.coo$numyes <- format(estimation3.coo$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 estimation3.coo$avg <- format(estimation3.coo$avg, digits=2, decimal.mark=".", big.mark=",",scientific=FALSE)
 names(estimation3.coo)[1] <- "Area of Origin"
 names(estimation3.coo)[2] <- "# of cases with intention to return"
-names(estimation3.coo)[3] <- "# of individuals with intention to return"
-names(estimation3.coo)[4] <- "Average case size"
+names(estimation3.coo)[3] <- "Corresponding # of individuals with intention to return"
+names(estimation3.coo)[4] <- "Recalculated average case size"
+
+## write.csv(estimation3.coo, paste(mainDir2,"/out/estimation3coo.csv", sep=""))
 
 estimation4.less <- estimation2[ ,c( "ctr","numyes", "numyesind" )]
 estimation4.less[] <- lapply(estimation4.less, function(x) type.convert(as.character(x)))
-estimation4.ctr <-aggregate(. ~ ctr, estimation4.less, sum)
+## write.csv(estimation4.less, paste(mainDir2,"/out/estimation4less.csv", sep=""))
+
+# str(estimation4.less)
+estimation4.ctr <-aggregate(. ~ ctr, data= estimation4.less, FUN="sum")
+
 estimation4.ctr$avg <-  estimation4.ctr$numyesind / estimation4.ctr$numyes
 estimation4.ctr$numyesind <- format(estimation4.ctr$numyesind, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 estimation4.ctr$numyes <- format(estimation4.ctr$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 estimation4.ctr$avg <- format(estimation4.ctr$avg, digits=2, decimal.mark=".", big.mark=",",scientific=FALSE)
 names(estimation4.ctr)[1] <- "Country of Asylum"
 names(estimation4.ctr)[2] <- "# of cases with intention to return"
-names(estimation4.ctr)[3] <- "# of individuals with intention to return"
-names(estimation4.ctr)[4] <- "Average case size"
+names(estimation4.ctr)[3] <- "Corresponding # of individuals with intention to return"
+names(estimation4.ctr)[4] <- "Recalculated average case size"
 
 
 ### Weighted
@@ -248,8 +256,8 @@ estimation5.ctr$Country <- estimation5.ctr$ctr
 estimation5.ctr$Undecided <- estimation5.ctr$numUndecided / estimation5.ctr$Freq
 estimation5.ctr$Yes.to.return <- estimation5.ctr$numyes / estimation5.ctr$Freq
 
-sumundecided <- round(sum(estimation5.ctr$numUndecided),digits=2)
-sumyes <- round(sum(estimation5.ctr$numyes),digits=2)
+sumundecided <- as.character(format(sum(estimation5.ctr$numUndecided), digits=0, decimal.mark=".", big.mark=",",scientific=FALSE))
+sumyes <- as.character(format(sum(estimation5.ctr$numyes), digits=0, decimal.mark=".", big.mark=",",scientific=FALSE))
 
 
 frame2 <- estimation5.ctr[ , c("Country", "Undecided",  "Yes.to.return")] 
@@ -308,13 +316,30 @@ progres.count3 <- merge(x=progres.count2, y=estimation6.key1, by="key1", all.x=T
 # names(progres.count3)
 progres.count4 <- progres.count3[ ,c("key1", "Stayed",  "Departed",  "numyes", "numUndecided")]
 
+country.coa <- as.data.frame(unique (progresall[c("ctr", "cool1Cat1")]))
+country.coa$key1 <- paste(country.coa$ctr,country.coa$cool1Cat,sep="-")
+country.coa <- merge (country.coa,progres.count4, by="key1" )
+country.coa <- country.coa[ , c("ctr", "Stayed",  "Departed",  "numyes", "numUndecided")]
+country.coa1  <-aggregate(. ~ ctr, country.coa, sum)
+
+country.coa1$numyes <- format(country.coa1$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+country.coa1$numUndecided <- format(country.coa1$numUndecided, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+country.coa1$Stayed <- format(country.coa1$Stayed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+country.coa1$Departed <- format(country.coa1$Departed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
+
+names(country.coa1)[1] <- "Country of Asylum"
+names(country.coa1)[2] <- "# of registered cases"
+names(country.coa1)[3] <- "# of spontaneous return cases 2016-17"
+names(country.coa1)[4] <- "# of cases with intention to return"
+names(country.coa1)[5] <- "# of cases undecided to return"
+
 progres.count4$var  <- paste(round((progres.count4$numyes/progres.count4$Departed) * 100 ,digits=2),"%",sep="")  
 progres.count4$numyes <- format(progres.count4$numyes, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 progres.count4$numUndecided <- format(progres.count4$numUndecided, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 progres.count4$Stayed <- format(progres.count4$Stayed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 progres.count4$Departed <- format(progres.count4$Departed, digits=0, decimal.mark=".", big.mark=",",scientific=FALSE)
 
-names(progres.count4)[1] <- " Asylum & Area of Origin"
+names(progres.count4)[1] <- "Country of Asylum & Area of Origin"
 names(progres.count4)[2] <- "# of registered cases"
 names(progres.count4)[3] <- "# of spontaneous return cases 2016-17"
 names(progres.count4)[4] <- "# of cases with intention to return"
@@ -323,68 +348,109 @@ names(progres.count4)[6] <- "Variation"
 
 ```
 
+
+##### Page Break
+
 # Executive summary
 
 
-Based on the intention survey performed in Egypt, Iraq and Jordan, it is possible to extrapolate results in order to assess potential numbers of return to Syria. The analytical approach is based on the following steps:
+Based on the phone survey on the intention and perception of Syrian refugees return to Syria performed in April 2017 in Egypt, Iraq and Jordan, it is possible to extrapolate results in order to assess potential numbers of return to Syria for the entire registered population. The analytical approach is based on the following steps:
 
-1.	The relation between intention to return (yes or undecided) and different variables that can describe the characteristics of case allow to understand the variables that, in terms of probability, are strongly dependent, moderately dependent and independent:  
-    *	The variable strongly dependent to the intention to return are __Country of Asylum__, __Area of Origin__, __Ethnicity__ and __Occupation__;
-    *	The variables moderately dependent to the intention to return are __Case Size__, & 
-    *	The variables independent to the intention to return are __Marital Status of the household representative__, __Female ratio__, __Age Dependency__, __Average age within household__ and __Occurrence of specific Needs__.
- 
-<br >   
+1.	The relation between the expressed intention to return (i.e. yes or undecided) and characteristics of each respondent (i.e. case) allows to understand the variables that, in terms of probability, are strongly dependent, moderately dependent and independent can influence similar intention to return: 
+    *	Strongly dependent variables to the intention to return are: __Country of Asylum__, __Area of Origin__, __Ethnicity__ and __Occupation__;
+    *	Moderately dependent variables to the intention to return are:  __Case Size__ & __Year of Arrival__
+    *	Independent variables to the intention to return are: __Marital Status of the household representative__, __Female ratio__, __Age Dependency__, __Average age within household__ and __Occurrence of specific Needs__.
 
-2.	To refine the accuracy of the projections and limit sampling biais, the __Country of Asylum__, __Area of Origin__ and __Case Size__ variables were then used to define the relative percentage of population segment (Country of Asylum, Area of Origin and Case Size) per intention (yes or undecided) (i.e. post-stratify the sample by computing weight for each record within the sample). Case Size is an important variable to consider in order to calculate projected number of individuals. This percentage can be then applied to the population numbers within each population segment to get the researched estimation. This represents an estimation of __`r  sumyes `__ cases who potentially intends to return and another __`r  sumundecided `__ caes who are potentially undecided to return.
+2.	To refine the accuracy of the projections with regard to potential of returns and limit sampling bias,  the same three key variables that were used in the original strategy, were applied to define the relative percentage of population segments (__Country of Asylum__, __Area of Origin__ and __Case Size__) per intention (i.e. yes or undecided). Case Size is an important variable to consider in order to calculate projected number of individuals. This percentage can be then applied to the population numbers within each population segment to get the researched estimation. This represents an estimation of __`r  sumyes `__ cases who potentially intends to return and another __`r  sumundecided `__ cases who are potentially undecided to return.
 
-<br >
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
+kable(frame1, caption="__Table__: Percentage before weighting") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
+column_spec (1, bold = T)
+```
+
+
 
 ```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
 #cat()
-kable(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+kable(estimation4.ctr, caption="__Table__: Estimation of individuals per Country of Asylum with projected intention to return") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (3, bold = T)
-
-
-#print(pandoc.table(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum", rownames = NULL, split.table = 300, split.cells = c("100%"),   use.hyphening = TRUE, justify = 'left'))
-
-#pandoc.table(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum", style = "rmarkdown", split.table = 300,  justify = 'left')
-
 ```
-<br >
+
+
 ```{r , echo=FALSE,  warning=FALSE, message=FALSE,  comment = "", tidy = TRUE, fig.height=4, size="small"}
-#cat()
-#cat()
-kable(estimation3.coo, caption="__Table__:Estimation of individuals per Area of Origin") %>%
+kable(estimation3.coo, caption="__Table__: Estimation of individuals per Area of Origin") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")
-#pandoc.table(estimation3.coo, caption="__Table__:Estimation of individuals per Country of Asylum", rownames = NULL, split.table = 300, split.cells = c("100%"),   use.hyphening = TRUE, justify = 'left')
-#print(pandoc.table(estimation3.coo, caption="__Table__:Estimation of individuals per Country of Asylum", style = "rmarkdown", split.table = 300,  justify = 'left'))
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")
+
+#pandoc.table(estimation3.coo, caption="__Table__: Estimation of individuals per Country of Asylum", rownames = NULL, split.table = 300, split.cells = c("100%"),   use.hyphening = TRUE, justify = 'left')
+#print(pandoc.table(estimation3.coo, caption="__Table__: Estimation of individuals per Country of Asylum", style = "rmarkdown", split.table = 300,  justify = 'left'))
 ```
 
 
-<br >
+
 3.	The analysis of projected intention to return has been then compared with the recorded spontaneous departure in 2016 & 2017 for Syrian Refugees in Egypt, Iraq & Lebanon for the same population segment. The observed proportion for the same population segments than described above are the following.
 
-<br >
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+kable(country.coa1, caption="__Table__: Comparison between predicted and observed departure per country") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
+column_spec (3, bold = T)
+```
 
-4.	The same analysis of variable correlations is confirming the strong dependence with  __Country of Asylum __,  __Area of Origin __ and  __Case Size __.
 
 
-\pagebreak 
+4.	The same analysis of variable correlations is confirming the strong dependence to the same variables than the variables dependent with intention to return. The significative differences between observed departure and intention to return lead to the following recommendations: 
+    * It would be worth verifying over time that the cases that declared intention to return are actually returning or not in order to compare their intention with their actual decision in the next year. 
+    * It would also be worth verifying that all spontaneous departures are correctly registered in the registration database. 
+    * Based on differences between observation, intention and realization, it should be possible to adjust a better predictive model to anticipate return to Syria. 
+
+<br>
+The main __Key findings__ from the reading of correlation graphs are: 
+
+  * Some refugees staying in Egypt tends to be more inclined to return that those staying in Jordan or Iraq. 
+  
+  * Some refugees staying in Iraq tends to be more inclined to state that they will __never__ return that those staying in Jordan or Egypt. This is actually a difference with the observed departure where Iraq is the place where correlation with spontaneous departure and country of asylum is the strongest. 
+  
+  * Refugees coming from Rural Damascus are more inclined to return that those coming from other area of Syria. Refugees coming from Dara and Aleppo as on the other side less inclined to return that those coming from other areas. Refugees coming from Dara are also less inclined to state that they will never return. 
+  
+  * Kurds refugees are more inclined to state that they will never return that refugees from other ethnicities. 
+  
+  * Refugees who worked in the agricultural and craft sector (according to [ILO Job classification](http://www.ilo.org/wcmsp5/groups/public/---dgreports/---dcomm/---publ/documents/publication/wcms_172572.pdf)) and in a slightly less significant way, refugees who had qualified work (Manager, Professional, Technicians..) are more inclined to return than other refugees in regards of occupation. 
+  
+  * Single Refugees are less inclined to return while Refugees registered as couple are more inclined to return. On the other hand, Refugees that registered as large case (more than 5 persons) tends to be more undecided than the others. This pattern is actually confirmed by the correlation with spontaneous departure. 
+  
+  * In terms of year of arrival, Refugees that arrived in 2013 are more inclined to return while refugees that arrived in 2011 or before as well as refugee who arrived in 2014 are actually less inclined to declare an intention to return. This pattern is confirmed by the correlation with spontaneous departure.
+
+
+
+Some __Key questions__ from reading of tables and correlation graphs: 
+
+  * Why do we have such a gap in Egypt between declared intention to return and observed spontaneous departure: Is it linked to the way spontaneous departure are recorded or to a new specific event that happened in the past months, or the way questions were raised during the survey? 
+  * Why do we observed so many recorded spontaneous departure, while the declared intention to return is comparatively lower than the other countries? Can this be interpreted as an hypothesis that all Kurds that had to return already did it now?
+
+
+
+
+##### Page Break
 
 # Introduction
 
-This report is the second part of the exploration of the intention survey. The objective is to analyze correlations between variables, to build projection and to compare declared intention with observed spontaneous departure.
+This report is the second part of the exploration of the phone survey on the intention and perception of Syrian refugees return to Syria performed in April 2017 in Egypt, Iraq and Jordan. 
+
+The specific objective of this second exploratory report is to analyze correlations between variables, to build projection and to compare declared intention with observed spontaneous departure.
 
 
 
 # Analysis of Correlation
 
-The analysis of correlation is done using a statistical test (called [Chi-squared](https://en.wikipedia.org/wiki/Chi-squared_test)). This test is used to determine if there is a significant relationship between two nominal categorical variables: It is used to evaluate the probability for two variables to be dependent from each other and it allows to visualise the details of the correlation between each modality of the variables.
+The analysis of correlation is done using a statistical test (called [Pearson's Chi-squared](https://en.wikipedia.org/wiki/Chi-squared_test)). This test is used to determine if there is a significant relationship between two nominal categorical variables: It is used to evaluate the probability for two variables to be dependent from each other and it allows to visualize the details of the correlation between each modality of the variables.
 
-The graphs below display the level of correlation between variables modalities (blue = positively associate, red = negatively associated, the bigger the dot = the higher the correlation).
+The graphs below display the level of correlation between variables modalities (*blue = positively associate, red = negatively associated, the bigger the dot = the higher the correlation*).
 
 ## Variables strongly dependent to intention to return
 
@@ -613,7 +679,7 @@ rm(chisq)
 ```
 
 
-\pagebreak 
+##### Page Break
 
 # Projections of return
 
@@ -628,28 +694,28 @@ The raw results of the survey gaves the following rates for each intention per c
 
 #kable(compare.weight)
 #cat()
-kable(frame1, caption="__Table__:Percentage before weighting") %>%
+kable(frame1, caption="__Table__: Percentage before weighting") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (1, bold = T)
 ```
 
-<br >
+<br>
 
-Based on previous analysis of variable dependencies and on the importance of the variable to compute projection, the sample dataset has been post-stratified based on the relative frequencies of the following variables with in the total registered cases:
-
- * Country of asylum
- * Area of origin
- * Case size
-
+Based on previous analysis of variable dependencies and on the importance of the variable to compute projection, the sample dataset has been post-stratified based on the relative frequencies of the following variables with in the total registered cases: 
+ * Country of asylum; 
+ * Area of origin; 
+ * Case size.
+ 
+This allows to recompute the weight for each record within the sample.
 
 ```{r , echo=FALSE,  warning=FALSE, message=FALSE,  cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
 
 
 #cat()
-kable(frame2, caption="__Table__:Percentage after weighting") %>%
+kable(frame2, caption="__Table__: Percentage after weighting") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (1, bold = T)
 
 ```
@@ -662,36 +728,36 @@ column_spec (1, bold = T)
 
 #print(pandoc.table(estimation2.coo, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
 
-kable(estimation4.ctr, caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+kable(estimation4.ctr, caption="__Table__: Estimation of individuals per Country of Asylum") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (3, bold = T)
 
 ```
 
-<br >
+<br>
 
 ```{r , echo=FALSE,  warning=FALSE, message=FALSE, comment = "", tidy = TRUE, fig.height=4, size="small"}
 #cat()
 #
-#kable(estimation4.ctr,caption="__Table__:Estimation of individuals per Country of Asylum") %>%
+#kable(estimation4.ctr,caption="__Table__: Estimation of individuals per Country of Asylum") %>%
 #kable_styling (latex_options = "striped", position = "center") %>%
-#add_footnote ( c("Figures presented here are estimation"), notation = "number") %>%
+#add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number") %>%
 #column_spec (3, bold = T)
 
 #cat()
-kable(estimation3.coo, caption="__Table__:Estimation of individuals per Area of Origin") %>%
+kable(estimation3.coo, caption="__Table__: Estimation of individuals per Area of Origin") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (3, bold = T)
 #kable_styling (latex_options = "striped", position = "center") %>%
-#add_footnote ( c("Figures presented here are estimation"), notation = "number") %>%
+#add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number") %>%
 #column_spec (3, bold = T)
 
 ```
 
 
-\pagebreak 
+##### Page Break
 
 # Comparison between observed sponteanous departure & intention to return
 
@@ -706,9 +772,20 @@ The objective is to see whether we observe the same proportion and the same patt
 
 
 #print(pandoc.table(proportion, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
-kable(progres.count4, caption="__Table__:Proportion of spontaneous departure") %>%
+kable(country.coa1, caption="__Table__: Proportion of spontaneous departure per country") %>%
 kable_styling ( position = "center") %>%
-add_footnote ( c("Figures presented here are estimation"), notation = "number")%>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
+column_spec (3, bold = T)
+```
+
+
+```{r , echo=FALSE,  warning=FALSE, message=FALSE, cache=FALSE,comment = "", tidy = TRUE, fig.height=4, size="small"}
+
+
+#print(pandoc.table(proportion, rownames = NULL, split.table = 300, split.cells = c( "100%"), use.hyphening = TRUE, justify = 'left'))
+kable(progres.count4, caption="__Table__: Proportion of spontaneous departure (details") %>%
+kable_styling ( position = "center") %>%
+add_footnote ( c("Figures presented here are statistical estimation. Figures are subject to a certain level of confidence and directly influenced by the quality of the original survey dataset."), notation = "number")%>%
 column_spec (3, bold = T)
 ```
 
@@ -858,27 +935,38 @@ rm(chisq)
 
 ```
 
-### Predicting return based on departure
+# Conclusions
+
+This initial analysis of intention to return and spontaneous departure confirms that there are potential predictors for decision to return.
+The significative differences between intention in 2017 and observed decision in 2016 and 2017 lead to the following recommendations: 
+
+ * It would be worth verifying over time that the cases that declared intention to return are actually returning or not in order to compare their intention with their actual decision in the next year.
+
+ * It would also be worth verifying that all spontaneous departures are correctly registered in the registration database. 
+
+ * Based on those differences between observation, intention and realization, it should be possible to adjust a better predictive model for return to Syria. 
+
+    
+
 
 ```{r, echo=FALSE, warning=FALSE}
-
+## Predicting return based on departure
 # Calculation of sample size depending on base
 ## test Regression
 #names(progresall)
 
-progres.reg <- progresall[ , c("return", "CountryAsylum" , "Case.size" ,  "YearArrivalCategory",
- "female.ratio" , "dependency" , "dem_ethnCat", "occupationcat", "cool1Cat1" )]
-model <- glm(return ~.,family=binomial(link='logit'),data=progres.reg )
+#progres.reg <- progresall[sample(1:nrow(progresall), 5000,replace=FALSE), c("return", "CountryAsylum" , "Case.size" ,  "YearArrivalCategory",  "female.ratio" , "dependency" , "dem_ethnCat", "occupationcat", "cool1Cat1" )]
+#model <- glm(return ~.,family=binomial(link='logit'),data=progres.reg )
 
 #summary(model)
 # Showing model
 # 
-pander(summary(model), missing="")
+#pander(summary(model), missing="")
 
 # Analysis of deviance
-pander(anova(model,test="Chisq"))
+#pander(anova(model,test="Chisq"))
 
 # McFadden R^2
-pander(pR2(model),caption="McFadden R^2")
+#pander(pR2(model),caption="McFadden R^2")
 
 ```
